@@ -1,0 +1,29 @@
+{
+  "specialist_accuracy": 0.4583333333333333,
+  "severity_accuracy": 0.5,
+  "training_samples": 116,
+  "specialist_classes": [
+    "Cardiologist",
+    "Dermatologist",
+    "ENT Specialist",
+    "Emergency Medicine",
+    "Endocrinologist",
+    "Gastroenterologist",
+    "General Physician",
+    "General Surgeon",
+    "Gynecologist",
+    "Neurologist",
+    "Ophthalmologist",
+    "Orthopedist",
+    "Pediatrician",
+    "Psychiatrist",
+    "Pulmonologist",
+    "Urologist"
+  ],
+  "severity_classes": [
+    "critical",
+    "mild",
+    "moderate",
+    "severe"
+  ]
+}

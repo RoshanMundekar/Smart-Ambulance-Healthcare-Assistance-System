@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Consultation — SmartAmbulance</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../css/custom.css"/>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <nav class="bg-white shadow-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4">
+      <a href="dashboard.html" class="text-gray-500 hover:text-red-600">←</a>
+      <span class="text-2xl">🩺</span>
+      <span class="font-bold text-gray-800 text-lg">Book Consultation</span>
+    </div>
+  </nav>
+
+  <div class="max-w-6xl mx-auto px-4 py-8">
+
+    <!-- STEP 1: SYMPTOM ANALYSIS -->
+    <div id="step-symptoms" class="bg-white rounded-2xl shadow p-6 mb-6">
+      <h2 class="text-xl font-bold text-gray-800 mb-2">🧠 AI Symptom Analysis</h2>
+      <p class="text-gray-500 text-sm mb-4">Describe your symptoms and our AI will analyze them and recommend a specialist.</p>
+      <textarea id="symptoms-input" rows="4" placeholder="e.g. I have chest pain, shortness of breath, and left arm pain for the past 2 hours..."
+        class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none mb-4"></textarea>
+      <button onclick="analyzeSymptoms()" id="analyze-btn"
+        class="bg-blue-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-blue-700 transition flex items-center gap-2">
+        <span id="analyze-spinner" class="hidden">⏳</span>
+        Analyze Symptoms
+      </button>
+    </div>
+
+    <!-- AI RESULTS (hidden) -->
+    <div id="ai-results" class="hidden bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 p-6 mb-6">
+      <h3 class="text-lg font-bold text-gray-800 mb-4">🤖 AI Analysis Results</h3>
+      <div class="grid md:grid-cols-3 gap-4 mb-4">
+        <div class="bg-white rounded-xl p-4 border">
+          <p class="text-xs text-gray-500 uppercase mb-1">Severity</p>
+          <p class="text-xl font-bold" id="ai-severity">—</p>
+        </div>
+        <div class="bg-white rounded-xl p-4 border">
+          <p class="text-xs text-gray-500 uppercase mb-1">Recommended Specialist</p>
+          <p class="text-xl font-bold text-blue-600" id="ai-specialist">—</p>
+        </div>
+        <div class="bg-white rounded-xl p-4 border">
+          <p class="text-xs text-gray-500 uppercase mb-1">Confidence</p>
+          <p class="text-xl font-bold text-green-600" id="ai-confidence">—</p>
+        </div>
+      </div>
+      <div class="bg-white rounded-xl p-4 border mb-4">
+        <p class="text-xs text-gray-500 uppercase mb-2">Probable Conditions</p>
+        <div id="ai-conditions" class="flex flex-wrap gap-2"></div>
+      </div>
+      <div id="ai-emergency-alert" class="hidden bg-red-50 border border-red-300 text-red-700 rounded-xl p-4 flex items-center gap-3">
+        <span class="text-2xl">⚠️</span>
+        <div>
+          <p class="font-bold">Emergency Detected!</p>
+          <p class="text-sm">Your symptoms suggest an emergency. Please call 108 or use the Emergency button on your dashboard.</p>
+        </div>
+        <a href="dashboard.html" class="ml-auto bg-red-600 text-white px-4 py-2 rounded-lg font-bold text-sm">Go to Emergency</a>
+      </div>
+      <p class="text-gray-600 text-sm" id="ai-message"></p>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="bg-white rounded-2xl shadow p-4 mb-6 flex flex-wrap gap-4 items-end">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Specialization</label>
+        <input type="text" id="filter-spec" placeholder="e.g. Cardiology"
+          class="border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Min Rating</label>
+        <select id="filter-rating" class="border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="">Any</option>
+          <option value="3">3+</option>
+          <option value="4">4+</option>
+          <option value="4.5">4.5+</option>
+        </select>
+      </div>
+      <button onclick="loadDoctors()" class="bg-gray-800 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-gray-700 transition">
+        Search Doctors
+      </button>
+    </div>
+
+    <!-- DOCTOR CARDS -->
+    <h2 class="text-xl font-bold text-gray-800 mb-4">Available Doctors</h2>
+    <div id="doctors-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+
+    <!-- BOOKING MODAL -->
+    <div id="booking-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-bold text-gray-800">Book Appointment</h3>
+          <button onclick="closeModal()" class="text-gray-400 text-2xl hover:text-gray-600">×</button>
+        </div>
+        <div id="modal-doctor-info" class="bg-blue-50 rounded-xl p-4 mb-4"></div>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Preferred Date</label>
+            <input type="date" id="book-date" required min="" class="w-full border rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Preferred Time</label>
+            <input type="time" id="book-time" required class="w-full border rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
+            <textarea id="book-notes" rows="2" class="w-full border rounded-xl px-4 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="checkbox" id="book-ambulance" class="rounded"/>
+            <label class="text-sm text-gray-700">Request ambulance pickup</label>
+          </div>
+          <button onclick="confirmBooking()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition">
+            Confirm Booking
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    let selectedDoctorId = null;
+    let selectedHospitalId = null;
+    let currentSymptoms = '';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!requireAuth()) return;
+      // Set min date to today
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('book-date').min = today;
+      loadDoctors();
+    });
+
+    async function analyzeSymptoms() {
+      const symptoms = document.getElementById('symptoms-input').value.trim();
+      if (!symptoms) { alert('Please enter your symptoms.'); return; }
+      currentSymptoms = symptoms;
+      const btn = document.getElementById('analyze-btn');
+      document.getElementById('analyze-spinner').classList.remove('hidden');
+      btn.disabled = true;
+
+      try {
+        const result = await apiPost('/appointments/analyze-symptoms', { symptoms });
+        document.getElementById('ai-results').classList.remove('hidden');
+
+        const severityColors = { mild: 'text-green-600', moderate: 'text-yellow-600', severe: 'text-orange-600', critical: 'text-red-600' };
+        document.getElementById('ai-severity').className = `text-xl font-bold capitalize ${severityColors[result.severity] || ''}`;
+        document.getElementById('ai-severity').textContent = result.severity;
+        document.getElementById('ai-specialist').textContent = result.recommended_specialist;
+        document.getElementById('ai-confidence').textContent = `${(result.confidence_score * 100).toFixed(0)}%`;
+        document.getElementById('ai-message').textContent = result.message;
+
+        const condEl = document.getElementById('ai-conditions');
+        condEl.innerHTML = (result.probable_conditions || []).map(c =>
+          `<span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">${c.condition} <span class="text-xs opacity-70">(${(c.probability * 100).toFixed(0)}%)</span></span>`
+        ).join('');
+
+        if (result.emergency_recommended) {
+          document.getElementById('ai-emergency-alert').classList.remove('hidden');
+        }
+
+        // Auto-filter doctors by recommended specialist
+        if (result.recommended_specialist) {
+          document.getElementById('filter-spec').value = result.recommended_specialist;
+          await loadDoctors();
+        }
+      } catch (e) {
+        alert('Analysis failed: ' + e.message);
+      } finally {
+        document.getElementById('analyze-spinner').classList.add('hidden');
+        btn.disabled = false;
+      }
+    }
+
+    async function loadDoctors() {
+      const spec = document.getElementById('filter-spec').value;
+      const rating = document.getElementById('filter-rating').value;
+      let url = '/appointments/doctors?';
+      if (spec) url += `specialization=${encodeURIComponent(spec)}&`;
+      if (rating) url += `min_rating=${rating}&`;
+
+      const grid = document.getElementById('doctors-grid');
+      grid.innerHTML = '<div class="col-span-3 text-center text-gray-400 py-8">Loading doctors...</div>';
+
+      try {
+        const doctors = await apiGet(url);
+        if (!doctors.length) {
+          grid.innerHTML = '<div class="col-span-3 text-center text-gray-400 py-8">No doctors found. Try different filters.</div>';
+          return;
+        }
+        grid.innerHTML = doctors.map(d => `
+          <div class="bg-white rounded-2xl shadow hover:shadow-lg transition p-5">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-2xl">👨‍⚕️</div>
+              <div>
+                <h3 class="font-bold text-gray-800">${d.doctor_name}</h3>
+                <p class="text-blue-600 text-sm">${d.specialization}</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-sm mb-4">
+              <div class="bg-gray-50 rounded-lg p-2"><p class="text-gray-400 text-xs">Experience</p><p class="font-semibold">${d.experience_years} yrs</p></div>
+              <div class="bg-gray-50 rounded-lg p-2"><p class="text-gray-400 text-xs">Fee</p><p class="font-semibold">₹${d.consultation_fee}</p></div>
+              <div class="bg-gray-50 rounded-lg p-2"><p class="text-gray-400 text-xs">Rating</p><p class="font-semibold">⭐ ${d.rating}</p></div>
+              <div class="bg-gray-50 rounded-lg p-2"><p class="text-gray-400 text-xs">Hospital</p><p class="font-semibold text-xs truncate">${d.hospital_name}</p></div>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="${d.is_available ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'} px-2 py-1 rounded-full text-xs font-semibold">
+                ${d.is_available ? '✓ Available' : '✗ Unavailable'}
+              </span>
+              <button onclick="openBooking(${d.id}, ${d.hospital_id}, '${d.doctor_name}', '${d.specialization}', ${d.consultation_fee})"
+                class="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-blue-700 transition ${!d.is_available ? 'opacity-50 cursor-not-allowed' : ''}"
+                ${!d.is_available ? 'disabled' : ''}>
+                Book
+              </button>
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {
+        grid.innerHTML = `<div class="col-span-3 text-center text-red-400 py-8">Error: ${e.message}</div>`;
+      }
+    }
+
+    function openBooking(doctorId, hospitalId, name, spec, fee) {
+      selectedDoctorId = doctorId;
+      selectedHospitalId = hospitalId;
+      document.getElementById('modal-doctor-info').innerHTML = `
+        <p class="font-bold text-gray-800">${name}</p>
+        <p class="text-blue-600 text-sm">${spec}</p>
+        <p class="text-gray-600 text-sm mt-1">Consultation Fee: <strong>₹${fee}</strong></p>
+      `;
+      document.getElementById('booking-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('booking-modal').classList.add('hidden');
+    }
+
+    async function confirmBooking() {
+      const d = document.getElementById('book-date').value;
+      const t = document.getElementById('book-time').value;
+      if (!d || !t) { alert('Please select date and time.'); return; }
+
+      const payload = {
+        booking_type: 'consultation',
+        symptoms: currentSymptoms || null,
+        hospital_id: selectedHospitalId,
+        doctor_id: selectedDoctorId,
+        appointment_date: d,
+        appointment_time: t + ':00',
+        notes: document.getElementById('book-notes').value || null,
+        ambulance_required: document.getElementById('book-ambulance').checked,
+      };
+
+      try {
+        await apiPost('/appointments/book', payload);
+        closeModal();
+        alert('✅ Booking confirmed! Check your dashboard for details.');
+      } catch (e) {
+        alert('Booking failed: ' + e.message);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Driver Dashboard — SmartAmbulance</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../css/custom.css"/>
+</head>
+<body class="bg-gray-900 min-h-screen text-white">
+
+  <!-- HEADER -->
+  <header class="bg-gray-800 border-b border-gray-700 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">🚑</span>
+      <div>
+        <p class="font-bold">Driver Dashboard</p>
+        <p class="text-xs text-gray-400" id="driver-name">Loading...</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2">
+        <div id="availability-dot" class="w-3 h-3 rounded-full bg-green-400 animate-pulse"></div>
+        <span id="availability-text" class="text-sm">Available</span>
+      </div>
+      <button onclick="toggleAvailability()" id="toggle-btn"
+        class="bg-gray-700 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-gray-600 transition">
+        Go Offline
+      </button>
+      <button onclick="logout()" class="text-gray-400 text-sm hover:text-white">Logout</button>
+    </div>
+  </header>
+
+  <div class="max-w-4xl mx-auto px-4 py-6">
+
+    <!-- ACTIVE EMERGENCY ALERT -->
+    <div id="active-emergency" class="hidden mb-6">
+      <div class="bg-red-600 rounded-2xl p-6 animate-pulse-slow">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-bold">🆘 ACTIVE EMERGENCY</h2>
+          <span id="em-severity" class="bg-red-800 px-3 py-1 rounded-full text-sm font-bold">CRITICAL</span>
+        </div>
+
+        <!-- Patient Info -->
+        <div class="bg-red-700 rounded-xl p-4 mb-4">
+          <h3 class="font-bold text-red-100 mb-2">Patient Details</h3>
+          <div class="grid grid-cols-2 gap-3 text-sm">
+            <div><p class="text-red-200">Name</p><p class="font-bold" id="pat-name">—</p></div>
+            <div><p class="text-red-200">Blood Group</p><p class="font-bold" id="pat-blood">—</p></div>
+            <div><p class="text-red-200">Age</p><p class="font-bold" id="pat-age">—</p></div>
+            <div><p class="text-red-200">Phone</p><p class="font-bold" id="pat-phone">—</p></div>
+          </div>
+          <div class="mt-3">
+            <p class="text-red-200 text-sm">Medical History</p>
+            <p class="text-sm font-medium" id="pat-history">—</p>
+          </div>
+          <div class="mt-2">
+            <p class="text-red-200 text-sm">Allergies</p>
+            <p class="text-sm font-medium" id="pat-allergies">—</p>
+          </div>
+        </div>
+
+        <!-- Route Info -->
+        <div class="bg-red-700 rounded-xl p-4 mb-4">
+          <h3 class="font-bold text-red-100 mb-2">Route Information</h3>
+          <div class="grid grid-cols-3 gap-3 text-center text-sm">
+            <div><p class="text-red-200">ETA</p><p class="font-bold text-2xl" id="em-eta">—</p><p class="text-red-200">mins</p></div>
+            <div><p class="text-red-200">Pickup</p><p class="font-bold text-xs" id="em-pickup">Loading...</p></div>
+            <div><p class="text-red-200">Hospital</p><p class="font-bold text-xs" id="em-hospital">Loading...</p></div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-3">
+          <button onclick="updateEmergencyStatus('at_scene')" class="flex-1 bg-yellow-400 text-gray-900 font-bold py-3 rounded-xl hover:bg-yellow-300 transition">
+            🎯 Arrived at Scene
+          </button>
+          <button onclick="updateEmergencyStatus('transporting')" class="flex-1 bg-blue-400 text-gray-900 font-bold py-3 rounded-xl hover:bg-blue-300 transition">
+            🏥 Transporting Patient
+          </button>
+        </div>
+        <button onclick="updateEmergencyStatus('arrived')" class="w-full mt-3 bg-green-400 text-gray-900 font-bold py-3 rounded-xl hover:bg-green-300 transition">
+          ✅ Arrived at Hospital
+        </button>
+      </div>
+    </div>
+
+    <!-- NO EMERGENCY STATE -->
+    <div id="no-emergency" class="bg-gray-800 rounded-2xl p-8 text-center mb-6">
+      <div class="text-6xl mb-4">🟢</div>
+      <h2 class="text-xl font-bold text-gray-200 mb-2">Ready for Dispatch</h2>
+      <p class="text-gray-400">You'll receive an alert when an emergency is assigned to you.</p>
+    </div>
+
+    <!-- STATS -->
+    <div class="grid grid-cols-3 gap-4 mb-6">
+      <div class="bg-gray-800 rounded-2xl p-4 text-center">
+        <p class="text-gray-400 text-xs uppercase mb-1">Total Trips</p>
+        <p class="text-2xl font-bold" id="stat-trips">—</p>
+      </div>
+      <div class="bg-gray-800 rounded-2xl p-4 text-center">
+        <p class="text-gray-400 text-xs uppercase mb-1">Rating</p>
+        <p class="text-2xl font-bold text-yellow-400" id="stat-rating">—</p>
+      </div>
+      <div class="bg-gray-800 rounded-2xl p-4 text-center">
+        <p class="text-gray-400 text-xs uppercase mb-1">Ambulance</p>
+        <p class="text-lg font-bold" id="stat-ambulance">—</p>
+      </div>
+    </div>
+
+    <!-- MAP PLACEHOLDER -->
+    <div id="map-placeholder" class="bg-gray-800 rounded-2xl p-4 mb-6">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="font-bold">Live Map</h3>
+        <span class="text-xs text-gray-400" id="map-coords">Detecting location...</span>
+      </div>
+      <div class="bg-gray-700 rounded-xl h-48 flex items-center justify-center">
+        <div class="text-center">
+          <div class="text-4xl mb-2">🗺️</div>
+          <p class="text-gray-400 text-sm">Map integration requires Google Maps API key</p>
+          <p class="text-gray-500 text-xs mt-1">Set GOOGLE_MAPS_API_KEY in .env</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRIP HISTORY -->
+    <div class="bg-gray-800 rounded-2xl p-4">
+      <h3 class="font-bold mb-4">Recent Trips</h3>
+      <div id="trip-history" class="space-y-2">
+        <div class="text-gray-400 text-center py-4">Loading trip history...</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    let isAvailable = true;
+    let activeEmergencyId = null;
+    let locationInterval = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!requireAuth()) return;
+      await loadDashboard();
+      startLocationTracking();
+    });
+
+    async function loadDashboard() {
+      try {
+        const data = await apiGet('/driver/dashboard');
+        if (data.driver) {
+          document.getElementById('driver-name').textContent = data.driver.name;
+          document.getElementById('stat-trips').textContent = data.driver.total_trips;
+          document.getElementById('stat-rating').textContent = `⭐ ${data.driver.rating}`;
+          isAvailable = data.driver.is_available;
+          updateAvailabilityUI();
+        }
+        if (data.ambulance) {
+          document.getElementById('stat-ambulance').textContent = data.ambulance.number;
+        }
+        if (data.active_emergency) {
+          showEmergency(data.active_emergency);
+        } else {
+          document.getElementById('no-emergency').classList.remove('hidden');
+          document.getElementById('active-emergency').classList.add('hidden');
+        }
+        await loadTripHistory();
+      } catch (e) {
+        console.error('Dashboard load error:', e);
+      }
+    }
+
+    function showEmergency(em) {
+      activeEmergencyId = em.id;
+      document.getElementById('no-emergency').classList.add('hidden');
+      document.getElementById('active-emergency').classList.remove('hidden');
+      document.getElementById('em-severity').textContent = em.severity?.toUpperCase() || 'HIGH';
+      document.getElementById('em-eta').textContent = em.eta_minutes || '—';
+      document.getElementById('em-pickup').textContent = em.patient_address || `${em.patient_lat?.toFixed(4)}, ${em.patient_lon?.toFixed(4)}`;
+
+      if (em.patient) {
+        document.getElementById('pat-name').textContent = em.patient.name || '—';
+        document.getElementById('pat-blood').textContent = em.patient.blood_group || '—';
+        document.getElementById('pat-age').textContent = em.patient.age ? `${em.patient.age} yrs` : '—';
+        document.getElementById('pat-phone').textContent = em.patient.phone || '—';
+        document.getElementById('pat-history').textContent = em.patient.medical_history || 'None';
+        document.getElementById('pat-allergies').textContent = em.patient.allergies || 'None';
+      }
+    }
+
+    async function updateEmergencyStatus(status) {
+      if (!activeEmergencyId) return;
+      try {
+        await apiPatch(`/emergency/${activeEmergencyId}/status`, { status });
+        if (status === 'arrived') {
+          document.getElementById('no-emergency').classList.remove('hidden');
+          document.getElementById('active-emergency').classList.add('hidden');
+          activeEmergencyId = null;
+          alert('✅ Emergency completed. Great work!');
+          await loadDashboard();
+        } else {
+          alert(`Status updated to: ${status.replace('_', ' ')}`);
+        }
+      } catch (e) {
+        alert('Failed to update status: ' + e.message);
+      }
+    }
+
+    async function toggleAvailability() {
+      try {
+        const data = await apiPost('/driver/toggle-availability', {});
+        isAvailable = data.is_available;
+        updateAvailabilityUI();
+      } catch (e) {
+        alert('Failed: ' + e.message);
+      }
+    }
+
+    function updateAvailabilityUI() {
+      const dot = document.getElementById('availability-dot');
+      const text = document.getElementById('availability-text');
+      const btn = document.getElementById('toggle-btn');
+      if (isAvailable) {
+        dot.className = 'w-3 h-3 rounded-full bg-green-400 animate-pulse';
+        text.textContent = 'Available';
+        btn.textContent = 'Go Offline';
+      } else {
+        dot.className = 'w-3 h-3 rounded-full bg-red-400';
+        text.textContent = 'Offline';
+        btn.textContent = 'Go Online';
+      }
+    }
+
+    function startLocationTracking() {
+      if (!navigator.geolocation) return;
+      locationInterval = navigator.geolocation.watchPosition(async pos => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        document.getElementById('map-coords').textContent = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        try {
+          await apiPost(`/driver/location?latitude=${lat}&longitude=${lng}`, {});
+        } catch (e) {}
+      }, null, { enableHighAccuracy: true, maximumAge: 5000 });
+    }
+
+    async function loadTripHistory() {
+      try {
+        const trips = await apiGet('/driver/trips/history');
+        const el = document.getElementById('trip-history');
+        if (!trips.length) {
+          el.innerHTML = '<div class="text-gray-400 text-center py-4 text-sm">No trips yet</div>';
+          return;
+        }
+        el.innerHTML = trips.slice(0, 10).map(t => `
+          <div class="flex items-center justify-between p-3 bg-gray-700 rounded-xl text-sm">
+            <div>
+              <p class="font-semibold capitalize">${t.emergency_type} emergency</p>
+              <p class="text-gray-400 text-xs">${new Date(t.created_at).toLocaleDateString()} • ${t.distance_km} km</p>
+            </div>
+            <div class="text-right">
+              <span class="${t.status === 'completed' ? 'text-green-400' : 'text-yellow-400'} font-bold capitalize">${t.status}</span>
+              ${t.response_time ? `<p class="text-gray-400 text-xs">${t.response_time} min</p>` : ''}
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {}
+    }
+  </script>
+</body>
+</html>

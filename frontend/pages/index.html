@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Ambulance & Healthcare System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../css/custom.css"/>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- NAVBAR -->
+  <nav class="bg-white shadow-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-3xl">🚑</span>
+        <div>
+          <h1 class="text-xl font-bold text-red-600 leading-tight">SmartAmbulance</h1>
+          <p class="text-xs text-gray-500">Healthcare Assistance System</p>
+        </div>
+      </div>
+      <div class="hidden md:flex items-center gap-6">
+        <a href="#features" class="text-gray-600 hover:text-red-600 transition">Features</a>
+        <a href="#how-it-works" class="text-gray-600 hover:text-red-600 transition">How It Works</a>
+        <a href="login.html" class="text-gray-600 hover:text-red-600 transition">Login</a>
+        <a href="login.html#register" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">Register</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="bg-gradient-to-br from-red-600 via-red-700 to-red-900 text-white py-24 px-4">
+    <div class="max-w-5xl mx-auto text-center">
+      <div class="inline-block bg-red-500 bg-opacity-40 rounded-full px-4 py-1 mb-6 text-sm font-semibold tracking-widest uppercase">AI-Powered Healthcare</div>
+      <h1 class="text-5xl md:text-6xl font-extrabold mb-6 leading-tight">
+        Emergency Care,<br/>
+        <span class="text-yellow-300">One Tap Away</span>
+      </h1>
+      <p class="text-xl text-red-100 mb-10 max-w-2xl mx-auto">
+        AI-powered ambulance dispatch, real-time hospital matching, and intelligent symptom analysis — all in one platform.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="dashboard.html" class="bg-white text-red-600 font-bold px-8 py-4 rounded-2xl text-lg hover:bg-red-50 transition shadow-lg">
+          🚑 Emergency Now
+        </a>
+        <a href="login.html#register" class="border-2 border-white text-white font-bold px-8 py-4 rounded-2xl text-lg hover:bg-white hover:text-red-600 transition">
+          Get Started Free
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section class="bg-white py-12 border-b">
+    <div class="max-w-5xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+      <div><div class="text-4xl font-bold text-red-600">< 3min</div><div class="text-gray-500 mt-1">Avg Response</div></div>
+      <div><div class="text-4xl font-bold text-red-600">500+</div><div class="text-gray-500 mt-1">Hospitals</div></div>
+      <div><div class="text-4xl font-bold text-red-600">98%</div><div class="text-gray-500 mt-1">AI Accuracy</div></div>
+      <div><div class="text-4xl font-bold text-red-600">24/7</div><div class="text-gray-500 mt-1">Available</div></div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features" class="py-20 px-4 bg-gray-50">
+    <div class="max-w-6xl mx-auto">
+      <h2 class="text-3xl font-bold text-center text-gray-800 mb-4">Everything You Need</h2>
+      <p class="text-center text-gray-500 mb-12">From emergency dispatch to specialist consultations</p>
+      <div class="grid md:grid-cols-3 gap-8">
+        <div class="bg-white rounded-2xl p-6 shadow hover:shadow-lg transition">
+          <div class="text-4xl mb-4">🆘</div>
+          <h3 class="text-xl font-bold mb-2 text-gray-800">One-Tap Emergency</h3>
+          <p class="text-gray-600">Share your live location instantly. AI dispatches the nearest ambulance with the best-fit hospital in seconds.</p>
+        </div>
+        <div class="bg-white rounded-2xl p-6 shadow hover:shadow-lg transition">
+          <div class="text-4xl mb-4">🧠</div>
+          <h3 class="text-xl font-bold mb-2 text-gray-800">AI Symptom Analysis</h3>
+          <p class="text-gray-600">Describe your symptoms in plain language. Our NLP engine identifies conditions and recommends the right specialist.</p>
+        </div>
+        <div class="bg-white rounded-2xl p-6 shadow hover:shadow-lg transition">
+          <div class="text-4xl mb-4">🏥</div>
+          <h3 class="text-xl font-bold mb-2 text-gray-800">Smart Hospital Matching</h3>
+          <p class="text-gray-600">Ranked by distance, available beds, specialization, and real-time traffic — not just proximity.</p>
+        </div>
+        <div class="bg-white rounded-2xl p-6 shadow hover:shadow-lg transition">
+          <div class="text-4xl mb-4">📍</div>
+          <h3 class="text-xl font-bold mb-2 text-gray-800">Live Ambulance Tracking</h3>
+          <p class="text-gray-600">Watch your ambulance on the map with real-time ETA updates via WebSocket technology.</p>
+        </div>
+        <div class="bg-white rounded-2xl p-6 shadow hover:shadow-lg transition">
+          <div class="text-4xl mb-4">👨‍⚕️</div>
+          <h3 class="text-xl font-bold mb-2 text-gray-800">Doctor Consultation</h3>
+          <p class="text-gray-600">Book appointments with verified specialists. Filter by expertise, rating, fee, and availability.</p>
+        </div>
+        <div class="bg-white rounded-2xl p-6 shadow hover:shadow-lg transition">
+          <div class="text-4xl mb-4">🔔</div>
+          <h3 class="text-xl font-bold mb-2 text-gray-800">Real-time Notifications</h3>
+          <p class="text-gray-600">Instant alerts for patients, drivers, and hospitals. Everyone stays informed at every step.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how-it-works" class="py-20 px-4 bg-white">
+    <div class="max-w-4xl mx-auto">
+      <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">How It Works</h2>
+      <div class="space-y-8">
+        <div class="flex gap-6 items-start">
+          <div class="bg-red-100 text-red-600 font-bold rounded-full w-12 h-12 flex items-center justify-center text-xl flex-shrink-0">1</div>
+          <div>
+            <h3 class="text-xl font-bold text-gray-800">Press Emergency Button</h3>
+            <p class="text-gray-600 mt-1">Your location is detected automatically. Your medical profile is fetched instantly.</p>
+          </div>
+        </div>
+        <div class="flex gap-6 items-start">
+          <div class="bg-red-100 text-red-600 font-bold rounded-full w-12 h-12 flex items-center justify-center text-xl flex-shrink-0">2</div>
+          <div>
+            <h3 class="text-xl font-bold text-gray-800">AI Analyzes & Recommends</h3>
+            <p class="text-gray-600 mt-1">Our AI evaluates your condition, predicts the required specialist, and identifies the best hospital.</p>
+          </div>
+        </div>
+        <div class="flex gap-6 items-start">
+          <div class="bg-red-100 text-red-600 font-bold rounded-full w-12 h-12 flex items-center justify-center text-xl flex-shrink-0">3</div>
+          <div>
+            <h3 class="text-xl font-bold text-gray-800">Ambulance Dispatched</h3>
+            <p class="text-gray-600 mt-1">The nearest ambulance is allocated. Driver gets route + patient details. Hospital is pre-alerted.</p>
+          </div>
+        </div>
+        <div class="flex gap-6 items-start">
+          <div class="bg-red-100 text-red-600 font-bold rounded-full w-12 h-12 flex items-center justify-center text-xl flex-shrink-0">4</div>
+          <div>
+            <h3 class="text-xl font-bold text-gray-800">Track in Real-Time</h3>
+            <p class="text-gray-600 mt-1">Follow the ambulance on the map. Get ETA updates. Hospital prepares before you arrive.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="bg-red-600 text-white py-16 px-4 text-center">
+    <h2 class="text-3xl font-bold mb-4">Ready to Get Started?</h2>
+    <p class="text-red-100 mb-8 text-lg">Register now — it's free. Be prepared for any emergency.</p>
+    <a href="login.html" class="bg-white text-red-600 font-bold px-10 py-4 rounded-2xl text-lg hover:bg-red-50 transition shadow-lg">
+      Create Free Account
+    </a>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="bg-gray-900 text-gray-400 py-8 text-center">
+    <p>© 2026 SmartAmbulance Healthcare System. All rights reserved.</p>
+    <p class="text-sm mt-1">Emergency? Call <strong class="text-red-400">108</strong> | Non-Emergency: Use the app</p>
+  </footer>
+
+</body>
+</html>

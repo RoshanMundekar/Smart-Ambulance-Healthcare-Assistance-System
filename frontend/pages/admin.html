@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Panel — SmartAmbulance</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../css/custom.css"/>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <nav class="bg-gray-900 text-white sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">⚙️</span>
+        <span class="font-bold text-lg">Admin Panel</span>
+      </div>
+      <button onclick="logout()" class="text-gray-400 text-sm hover:text-white">Logout</button>
+    </div>
+  </nav>
+
+  <!-- TAB NAV -->
+  <div class="bg-white border-b shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto">
+      <button onclick="showTab('analytics')" id="tab-analytics" class="tab-btn active-tab px-4 py-3 text-sm font-semibold">📊 Analytics</button>
+      <button onclick="showTab('emergencies')" id="tab-emergencies" class="tab-btn px-4 py-3 text-sm font-semibold">🆘 Emergencies</button>
+      <button onclick="showTab('ambulances')" id="tab-ambulances" class="tab-btn px-4 py-3 text-sm font-semibold">🚑 Ambulances</button>
+      <button onclick="showTab('users')" id="tab-users" class="tab-btn px-4 py-3 text-sm font-semibold">👥 Users</button>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 py-6">
+
+    <!-- ANALYTICS TAB -->
+    <div id="panel-analytics">
+      <div id="analytics-content" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-2xl p-5 shadow text-center animate-pulse"><div class="h-8 bg-gray-200 rounded mb-2"></div><div class="h-4 bg-gray-100 rounded"></div></div>
+        <div class="bg-white rounded-2xl p-5 shadow text-center animate-pulse"><div class="h-8 bg-gray-200 rounded mb-2"></div><div class="h-4 bg-gray-100 rounded"></div></div>
+        <div class="bg-white rounded-2xl p-5 shadow text-center animate-pulse"><div class="h-8 bg-gray-200 rounded mb-2"></div><div class="h-4 bg-gray-100 rounded"></div></div>
+        <div class="bg-white rounded-2xl p-5 shadow text-center animate-pulse"><div class="h-8 bg-gray-200 rounded mb-2"></div><div class="h-4 bg-gray-100 rounded"></div></div>
+      </div>
+      <div id="analytics-detail" class="grid md:grid-cols-2 gap-4"></div>
+    </div>
+
+    <!-- EMERGENCIES TAB -->
+    <div id="panel-emergencies" class="hidden">
+      <h2 class="text-xl font-bold text-gray-800 mb-4">Active Emergencies</h2>
+      <div id="em-table" class="bg-white rounded-2xl shadow overflow-hidden">
+        <div class="text-center text-gray-400 py-8">Loading...</div>
+      </div>
+    </div>
+
+    <!-- AMBULANCES TAB -->
+    <div id="panel-ambulances" class="hidden">
+      <h2 class="text-xl font-bold text-gray-800 mb-4">Ambulance Fleet</h2>
+      <div id="amb-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="text-center text-gray-400 py-8">Loading...</div>
+      </div>
+    </div>
+
+    <!-- USERS TAB -->
+    <div id="panel-users" class="hidden">
+      <h2 class="text-xl font-bold text-gray-800 mb-4">Users Management</h2>
+      <div class="flex gap-3 mb-4">
+        <select id="user-role-filter" onchange="loadUsers()" class="border rounded-xl px-3 py-2 text-sm focus:outline-none">
+          <option value="">All Roles</option>
+          <option value="patient">Patients</option>
+          <option value="driver">Drivers</option>
+          <option value="doctor">Doctors</option>
+          <option value="hospital_admin">Hospital Admins</option>
+        </select>
+      </div>
+      <div id="users-table" class="bg-white rounded-2xl shadow overflow-hidden">
+        <div class="text-center text-gray-400 py-8">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .tab-btn { color: #6b7280; border-bottom: 2px solid transparent; }
+    .active-tab { color: #dc2626; border-bottom-color: #dc2626; }
+  </style>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!requireAuth()) return;
+      loadAnalytics();
+    });
+
+    function showTab(tab) {
+      ['analytics', 'emergencies', 'ambulances', 'users'].forEach(t => {
+        document.getElementById(`panel-${t}`).classList.toggle('hidden', t !== tab);
+        document.getElementById(`tab-${t}`).classList.toggle('active-tab', t === tab);
+      });
+      if (tab === 'emergencies') loadEmergencies();
+      if (tab === 'ambulances') loadAmbulances();
+      if (tab === 'users') loadUsers();
+    }
+
+    async function loadAnalytics() {
+      try {
+        const data = await apiGet('/admin/analytics');
+        document.getElementById('analytics-content').innerHTML = `
+          <div class="bg-white rounded-2xl p-5 shadow text-center">
+            <div class="text-3xl font-bold text-blue-600">${data.users.total}</div>
+            <div class="text-sm text-gray-500 mt-1">Total Users</div>
+          </div>
+          <div class="bg-white rounded-2xl p-5 shadow text-center">
+            <div class="text-3xl font-bold text-red-600">${data.emergencies.total}</div>
+            <div class="text-sm text-gray-500 mt-1">Total Emergencies</div>
+          </div>
+          <div class="bg-white rounded-2xl p-5 shadow text-center">
+            <div class="text-3xl font-bold text-green-600">${data.ambulances.available}/${data.ambulances.total}</div>
+            <div class="text-sm text-gray-500 mt-1">Ambulances Available</div>
+          </div>
+          <div class="bg-white rounded-2xl p-5 shadow text-center">
+            <div class="text-3xl font-bold text-purple-600">${data.emergencies.avg_response_minutes} min</div>
+            <div class="text-sm text-gray-500 mt-1">Avg Response Time</div>
+          </div>
+        `;
+        document.getElementById('analytics-detail').innerHTML = `
+          <div class="bg-white rounded-2xl shadow p-5">
+            <h3 class="font-bold text-gray-800 mb-3">Users by Role</h3>
+            <div class="space-y-2">
+              ${Object.entries(data.users.by_role).map(([role, count]) => `
+                <div class="flex justify-between text-sm">
+                  <span class="text-gray-600 capitalize">${role.replace('_', ' ')}</span>
+                  <span class="font-bold">${count}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl shadow p-5">
+            <h3 class="font-bold text-gray-800 mb-3">Emergency by Type</h3>
+            <div class="space-y-2">
+              ${Object.entries(data.emergencies.by_type || {}).map(([type, count]) => `
+                <div class="flex justify-between text-sm">
+                  <span class="text-gray-600 capitalize">${type}</span>
+                  <span class="font-bold">${count}</span>
+                </div>
+              `).join('') || '<p class="text-gray-400 text-sm">No data</p>'}
+            </div>
+          </div>
+        `;
+      } catch (e) {
+        document.getElementById('analytics-content').innerHTML = '<div class="col-span-4 text-center text-red-400 py-8">Failed to load analytics</div>';
+      }
+    }
+
+    async function loadEmergencies() {
+      try {
+        const data = await apiGet('/admin/emergency/active');
+        const el = document.getElementById('em-table');
+        if (!data.length) { el.innerHTML = '<div class="text-center text-gray-400 py-8">No active emergencies</div>'; return; }
+        el.innerHTML = `
+          <table class="w-full text-sm">
+            <thead class="bg-gray-50 border-b"><tr class="text-left">
+              <th class="px-4 py-3 text-gray-600">ID</th>
+              <th class="px-4 py-3 text-gray-600">Type</th>
+              <th class="px-4 py-3 text-gray-600">Severity</th>
+              <th class="px-4 py-3 text-gray-600">Status</th>
+              <th class="px-4 py-3 text-gray-600">ETA</th>
+              <th class="px-4 py-3 text-gray-600">Created</th>
+            </tr></thead>
+            <tbody class="divide-y">
+              ${data.map(e => `<tr class="hover:bg-gray-50">
+                <td class="px-4 py-3 font-bold">#${e.id}</td>
+                <td class="px-4 py-3 capitalize">${e.emergency_type}</td>
+                <td class="px-4 py-3"><span class="px-2 py-1 rounded-full text-xs font-bold ${e.severity === 'critical' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}">${e.severity.toUpperCase()}</span></td>
+                <td class="px-4 py-3 capitalize">${e.status.replace('_',' ')}</td>
+                <td class="px-4 py-3">${e.eta_minutes ? e.eta_minutes + ' min' : '—'}</td>
+                <td class="px-4 py-3 text-gray-400">${new Date(e.created_at).toLocaleString()}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>`;
+      } catch (e) {
+        document.getElementById('em-table').innerHTML = `<div class="text-center text-red-400 py-8">Error: ${e.message}</div>`;
+      }
+    }
+
+    async function loadAmbulances() {
+      try {
+        const data = await apiGet('/admin/ambulances');
+        const statusColors = { available: 'bg-green-100 text-green-700', en_route: 'bg-blue-100 text-blue-700', at_scene: 'bg-yellow-100 text-yellow-700', transporting: 'bg-red-100 text-red-700', maintenance: 'bg-gray-100 text-gray-700', offline: 'bg-gray-100 text-gray-500' };
+        document.getElementById('amb-grid').innerHTML = data.map(a => `
+          <div class="bg-white rounded-2xl shadow p-4">
+            <div class="flex justify-between items-start mb-3">
+              <div>
+                <p class="font-bold text-gray-800">${a.number}</p>
+                <p class="text-sm text-gray-500 capitalize">${a.type}</p>
+              </div>
+              <span class="px-2 py-1 rounded-full text-xs font-bold ${statusColors[a.status] || 'bg-gray-100'}">${a.status.replace('_', ' ')}</span>
+            </div>
+            <div class="text-xs text-gray-400">
+              <p>Location: ${a.lat.toFixed(4)}, ${a.lon.toFixed(4)}</p>
+              <p>Active: ${a.is_active ? '✓' : '✗'}</p>
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {
+        document.getElementById('amb-grid').innerHTML = `<div class="text-center text-red-400 py-8">Error: ${e.message}</div>`;
+      }
+    }
+
+    async function loadUsers() {
+      const role = document.getElementById('user-role-filter').value;
+      try {
+        let url = '/admin/users?';
+        if (role) url += `role=${role}`;
+        const data = await apiGet(url);
+        document.getElementById('users-table').innerHTML = `
+          <table class="w-full text-sm">
+            <thead class="bg-gray-50 border-b"><tr class="text-left">
+              <th class="px-4 py-3">Name</th>
+              <th class="px-4 py-3">Email</th>
+              <th class="px-4 py-3">Role</th>
+              <th class="px-4 py-3">Phone</th>
+              <th class="px-4 py-3">Status</th>
+            </tr></thead>
+            <tbody class="divide-y">
+              ${data.map(u => `<tr class="hover:bg-gray-50">
+                <td class="px-4 py-3 font-medium">${u.full_name}</td>
+                <td class="px-4 py-3 text-gray-500">${u.email}</td>
+                <td class="px-4 py-3 capitalize">${u.role.replace('_', ' ')}</td>
+                <td class="px-4 py-3">${u.phone}</td>
+                <td class="px-4 py-3"><span class="${u.is_active ? 'text-green-600' : 'text-red-500'} font-bold">${u.is_active ? 'Active' : 'Inactive'}</span></td>
+              </tr>`).join('')}
+            </tbody>
+          </table>`;
+      } catch (e) {
+        document.getElementById('users-table').innerHTML = `<div class="text-center text-red-400 py-8">Error: ${e.message}</div>`;
+      }
+    }
+  </script>
+</body>
+</html>

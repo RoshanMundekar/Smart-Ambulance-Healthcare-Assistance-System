@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Patient Dashboard — SmartAmbulance</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../css/custom.css"/>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <!-- NAVBAR -->
+  <nav class="bg-white shadow-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">🚑</span>
+        <span class="font-bold text-red-600 text-lg">SmartAmbulance</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <button onclick="showNotifications()" class="relative p-2 text-gray-600 hover:text-red-600">
+          🔔 <span id="notif-badge" class="hidden absolute top-0 right-0 bg-red-600 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">0</span>
+        </button>
+        <div class="flex items-center gap-2">
+          <div class="w-9 h-9 bg-red-100 rounded-full flex items-center justify-center text-red-600 font-bold" id="avatar">P</div>
+          <span class="font-medium text-gray-700" id="user-name">Loading...</span>
+        </div>
+        <button onclick="logout()" class="text-gray-500 hover:text-red-600 text-sm">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-7xl mx-auto px-4 py-8">
+
+    <!-- EMERGENCY BUTTON -->
+    <div class="bg-gradient-to-r from-red-600 to-red-800 rounded-3xl p-8 mb-8 text-white text-center shadow-xl">
+      <h2 class="text-2xl font-bold mb-2">Emergency?</h2>
+      <p class="text-red-100 mb-6">Press the button below. We'll dispatch the nearest ambulance immediately.</p>
+      <button onclick="triggerEmergency()" id="emergency-btn"
+        class="emergency-pulse bg-white text-red-600 font-extrabold text-2xl px-12 py-6 rounded-full shadow-2xl hover:scale-105 transition-transform focus:outline-none focus:ring-4 focus:ring-white">
+        🆘 SOS EMERGENCY
+      </button>
+      <p class="text-red-200 text-sm mt-4" id="location-status">Detecting your location...</p>
+    </div>
+
+    <!-- EMERGENCY STATUS CARD (hidden by default) -->
+    <div id="emergency-status-card" class="hidden bg-white rounded-2xl shadow-lg p-6 mb-8 border-l-4 border-red-500">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-xl font-bold text-gray-800">🚑 Emergency Active</h3>
+        <span id="em-status-badge" class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-sm font-semibold">Requested</span>
+      </div>
+      <div class="grid md:grid-cols-3 gap-4">
+        <div class="bg-gray-50 rounded-xl p-4">
+          <p class="text-xs text-gray-500 uppercase mb-1">Ambulance</p>
+          <p class="font-bold text-gray-800" id="em-ambulance">Allocating...</p>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-4">
+          <p class="text-xs text-gray-500 uppercase mb-1">ETA</p>
+          <p class="font-bold text-red-600 text-xl" id="em-eta">—</p>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-4">
+          <p class="text-xs text-gray-500 uppercase mb-1">Hospital</p>
+          <p class="font-bold text-gray-800" id="em-hospital">Finding...</p>
+        </div>
+      </div>
+      <div class="mt-4">
+        <p class="text-sm text-gray-500 mb-1">AI Recommendation</p>
+        <p class="font-medium text-gray-800" id="em-ai-rec">Analyzing...</p>
+      </div>
+    </div>
+
+    <!-- QUICK ACTIONS -->
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <a href="consultation.html" class="bg-white rounded-2xl p-5 shadow hover:shadow-lg transition flex items-center gap-4">
+        <div class="bg-blue-100 rounded-xl w-12 h-12 flex items-center justify-center text-2xl">🩺</div>
+        <div><p class="font-bold text-gray-800">Book Consultation</p><p class="text-sm text-gray-500">Find a doctor</p></div>
+      </a>
+      <a href="consultation.html#symptoms" class="bg-white rounded-2xl p-5 shadow hover:shadow-lg transition flex items-center gap-4">
+        <div class="bg-green-100 rounded-xl w-12 h-12 flex items-center justify-center text-2xl">🧠</div>
+        <div><p class="font-bold text-gray-800">Symptom Check</p><p class="text-sm text-gray-500">AI analysis</p></div>
+      </a>
+      <button onclick="viewBookings()" class="bg-white rounded-2xl p-5 shadow hover:shadow-lg transition flex items-center gap-4 text-left">
+        <div class="bg-purple-100 rounded-xl w-12 h-12 flex items-center justify-center text-2xl">📋</div>
+        <div><p class="font-bold text-gray-800">My Bookings</p><p class="text-sm text-gray-500">View history</p></div>
+      </button>
+      <button onclick="editProfile()" class="bg-white rounded-2xl p-5 shadow hover:shadow-lg transition flex items-center gap-4 text-left">
+        <div class="bg-orange-100 rounded-xl w-12 h-12 flex items-center justify-center text-2xl">👤</div>
+        <div><p class="font-bold text-gray-800">My Profile</p><p class="text-sm text-gray-500">Update info</p></div>
+      </button>
+    </div>
+
+    <!-- PROFILE + RECENT BOOKINGS -->
+    <div class="grid lg:grid-cols-3 gap-6">
+      <!-- Profile Card -->
+      <div class="bg-white rounded-2xl shadow p-6">
+        <h3 class="font-bold text-gray-800 text-lg mb-4">Health Profile</h3>
+        <div class="space-y-3" id="profile-details">
+          <div class="flex justify-between"><span class="text-gray-500 text-sm">Blood Group</span><span class="font-semibold text-red-600" id="p-blood">—</span></div>
+          <div class="flex justify-between"><span class="text-gray-500 text-sm">Age</span><span class="font-semibold" id="p-age">—</span></div>
+          <div class="flex justify-between"><span class="text-gray-500 text-sm">Gender</span><span class="font-semibold capitalize" id="p-gender">—</span></div>
+          <div class="pt-3 border-t">
+            <p class="text-gray-500 text-sm mb-1">Chronic Conditions</p>
+            <p class="text-sm font-medium text-gray-700" id="p-chronic">None</p>
+          </div>
+          <div>
+            <p class="text-gray-500 text-sm mb-1">Allergies</p>
+            <p class="text-sm font-medium text-gray-700" id="p-allergies">None</p>
+          </div>
+          <div>
+            <p class="text-gray-500 text-sm mb-1">Emergency Contact</p>
+            <p class="text-sm font-medium text-gray-700" id="p-emergency">—</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Bookings -->
+      <div class="lg:col-span-2 bg-white rounded-2xl shadow p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-bold text-gray-800 text-lg">Recent Bookings</h3>
+          <button onclick="loadBookings()" class="text-red-600 text-sm hover:underline">Refresh</button>
+        </div>
+        <div id="bookings-list" class="space-y-3">
+          <div class="text-center text-gray-400 py-8">Loading your bookings...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICATION PANEL -->
+  <div id="notif-panel" class="hidden fixed top-16 right-4 w-80 bg-white rounded-2xl shadow-2xl z-50 overflow-hidden">
+    <div class="bg-red-600 text-white px-4 py-3 flex justify-between items-center">
+      <span class="font-bold">Notifications</span>
+      <button onclick="hideNotifications()" class="text-white text-xl">×</button>
+    </div>
+    <div id="notif-list" class="max-h-64 overflow-y-auto p-2 text-sm text-gray-600">
+      <div class="p-4 text-center text-gray-400">No notifications</div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/emergency.js"></script>
+  <script>
+    let userLocation = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!requireAuth()) return;
+      const user = getCurrentUser();
+      if (user) {
+        document.getElementById('user-name').textContent = user.full_name.split(' ')[0];
+        document.getElementById('avatar').textContent = user.full_name.charAt(0).toUpperCase();
+        document.getElementById('p-blood').textContent = user.blood_group || '—';
+        document.getElementById('p-age').textContent = user.age ? `${user.age} yrs` : '—';
+        document.getElementById('p-gender').textContent = user.gender || '—';
+        document.getElementById('p-chronic').textContent = user.chronic_conditions || 'None';
+        document.getElementById('p-allergies').textContent = user.allergies || 'None';
+        document.getElementById('p-emergency').textContent = user.emergency_contact_name
+          ? `${user.emergency_contact_name} (${user.emergency_contact_phone})`
+          : '—';
+      }
+      detectLocation();
+      loadBookings();
+      initWebSocket(user?.id);
+    });
+
+    function detectLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          pos => {
+            userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            document.getElementById('location-status').textContent = `📍 Location detected (${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)})`;
+          },
+          () => {
+            document.getElementById('location-status').textContent = '⚠️ Location access denied. Please enable location.';
+          }
+        );
+      }
+    }
+
+    async function loadBookings() {
+      try {
+        const data = await apiGet('/appointments/my-bookings');
+        const container = document.getElementById('bookings-list');
+        if (!data.length) {
+          container.innerHTML = '<div class="text-center text-gray-400 py-8">No bookings yet</div>';
+          return;
+        }
+        container.innerHTML = data.slice(0, 5).map(b => `
+          <div class="flex items-center justify-between p-3 rounded-xl bg-gray-50">
+            <div>
+              <p class="font-semibold text-gray-800 capitalize">${b.booking_type} Booking</p>
+              <p class="text-xs text-gray-500">${b.appointment_date || new Date(b.created_at).toLocaleDateString()}</p>
+              ${b.ai_diagnosis ? `<p class="text-xs text-blue-600">AI: ${b.ai_diagnosis}</p>` : ''}
+            </div>
+            <span class="px-2 py-1 rounded-full text-xs font-bold ${statusColor(b.booking_status)}">${b.booking_status}</span>
+          </div>
+        `).join('');
+      } catch (e) {
+        document.getElementById('bookings-list').innerHTML = '<div class="text-center text-red-400 py-4">Failed to load bookings</div>';
+      }
+    }
+
+    function statusColor(status) {
+      const map = { pending: 'bg-yellow-100 text-yellow-700', confirmed: 'bg-blue-100 text-blue-700', completed: 'bg-green-100 text-green-700', cancelled: 'bg-red-100 text-red-700', in_progress: 'bg-purple-100 text-purple-700' };
+      return map[status] || 'bg-gray-100 text-gray-700';
+    }
+
+    function showNotifications() { document.getElementById('notif-panel').classList.remove('hidden'); }
+    function hideNotifications() { document.getElementById('notif-panel').classList.add('hidden'); }
+    function viewBookings() { loadBookings(); }
+    function editProfile() { alert('Profile editor — connect to /api/auth/me PUT endpoint.'); }
+  </script>
+</body>
+</html>

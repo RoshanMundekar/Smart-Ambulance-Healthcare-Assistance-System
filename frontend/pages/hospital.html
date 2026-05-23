@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hospital Dashboard — SmartAmbulance</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../css/custom.css"/>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <nav class="bg-white shadow-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">🏥</span>
+        <div>
+          <h1 class="font-bold text-gray-800">Hospital Dashboard</h1>
+          <p class="text-xs text-gray-500" id="hospital-name">Loading...</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+        <span class="text-sm text-gray-600">Live</span>
+        <button onclick="logout()" class="text-gray-500 text-sm hover:text-red-600">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-7xl mx-auto px-4 py-6">
+
+    <!-- STATS ROW -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white rounded-2xl p-5 shadow text-center">
+        <div class="text-3xl font-bold text-red-600" id="stat-emergencies">—</div>
+        <div class="text-sm text-gray-500 mt-1">Active Emergencies</div>
+      </div>
+      <div class="bg-white rounded-2xl p-5 shadow text-center">
+        <div class="text-3xl font-bold text-blue-600" id="stat-appointments">—</div>
+        <div class="text-sm text-gray-500 mt-1">Today's Appointments</div>
+      </div>
+      <div class="bg-white rounded-2xl p-5 shadow text-center">
+        <div class="text-3xl font-bold text-green-600" id="stat-doctors">—</div>
+        <div class="text-sm text-gray-500 mt-1">Doctors On Duty</div>
+      </div>
+      <div class="bg-white rounded-2xl p-5 shadow text-center">
+        <div class="text-3xl font-bold text-purple-600" id="stat-beds">—</div>
+        <div class="text-sm text-gray-500 mt-1">Available Beds</div>
+      </div>
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-6">
+      <!-- INCOMING EMERGENCIES -->
+      <div class="lg:col-span-2">
+        <div class="bg-white rounded-2xl shadow p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-gray-800">🆘 Incoming Emergencies</h2>
+            <button onclick="loadDashboard()" class="text-red-600 text-sm hover:underline">Refresh</button>
+          </div>
+          <div id="emergencies-list" class="space-y-4">
+            <div class="text-center text-gray-400 py-8">Loading emergencies...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- QUICK ACTIONS -->
+      <div class="space-y-4">
+        <div class="bg-white rounded-2xl shadow p-5">
+          <h3 class="font-bold text-gray-800 mb-3">Quick Actions</h3>
+          <div class="space-y-2">
+            <button onclick="updateBeds()" class="w-full bg-blue-50 text-blue-700 font-semibold px-4 py-3 rounded-xl text-sm hover:bg-blue-100 transition text-left">
+              🛏️ Update Bed Count
+            </button>
+            <a href="consultation.html" class="block w-full bg-green-50 text-green-700 font-semibold px-4 py-3 rounded-xl text-sm hover:bg-green-100 transition">
+              👨‍⚕️ View Doctors
+            </a>
+          </div>
+        </div>
+
+        <!-- Hospital Info -->
+        <div class="bg-white rounded-2xl shadow p-5">
+          <h3 class="font-bold text-gray-800 mb-3">Hospital Info</h3>
+          <div class="space-y-2 text-sm" id="hospital-info">
+            <div class="animate-pulse space-y-2">
+              <div class="h-4 bg-gray-200 rounded"></div>
+              <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BED UPDATE MODAL -->
+  <div id="bed-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-6 w-80">
+      <h3 class="font-bold text-gray-800 mb-4">Update Bed Count</h3>
+      <div class="space-y-3">
+        <div>
+          <label class="text-sm text-gray-600">Available Beds</label>
+          <input type="number" id="bed-available" min="0" class="w-full border rounded-xl px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+        </div>
+        <div>
+          <label class="text-sm text-gray-600">ICU Beds</label>
+          <input type="number" id="bed-icu" min="0" class="w-full border rounded-xl px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+        </div>
+        <div class="flex gap-3">
+          <button onclick="saveBeds()" class="flex-1 bg-blue-600 text-white font-bold py-2 rounded-xl hover:bg-blue-700">Save</button>
+          <button onclick="document.getElementById('bed-modal').classList.add('hidden')" class="flex-1 bg-gray-200 text-gray-700 font-bold py-2 rounded-xl hover:bg-gray-300">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    let hospitalId = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!requireAuth()) return;
+      await loadDashboard();
+      setInterval(loadDashboard, 30000); // Auto-refresh every 30s
+    });
+
+    async function loadDashboard() {
+      try {
+        const data = await apiGet('/hospital/dashboard');
+        if (data.hospital) {
+          hospitalId = data.hospital.id;
+          document.getElementById('hospital-name').textContent = data.hospital.name;
+          document.getElementById('stat-beds').textContent = data.hospital.available_beds;
+          document.getElementById('hospital-info').innerHTML = `
+            <div class="flex justify-between"><span class="text-gray-500">Available Beds</span><span class="font-bold">${data.hospital.available_beds}</span></div>
+            <div class="flex justify-between"><span class="text-gray-500">ICU Beds</span><span class="font-bold">${data.hospital.icu_beds}</span></div>
+            <div class="flex justify-between"><span class="text-gray-500">Rating</span><span class="font-bold">⭐ ${data.hospital.rating}</span></div>
+          `;
+        }
+        if (data.stats) {
+          document.getElementById('stat-emergencies').textContent = data.stats.active_emergencies;
+          document.getElementById('stat-appointments').textContent = data.stats.today_appointments;
+          document.getElementById('stat-doctors').textContent = data.stats.available_doctors;
+        }
+        renderEmergencies(data.active_emergencies || []);
+      } catch (e) {
+        console.error('Dashboard error:', e);
+      }
+    }
+
+    function renderEmergencies(emergencies) {
+      const el = document.getElementById('emergencies-list');
+      if (!emergencies.length) {
+        el.innerHTML = '<div class="text-center text-gray-400 py-8">No active emergencies</div>';
+        return;
+      }
+      const severityColors = { critical: 'border-red-500 bg-red-50', high: 'border-orange-500 bg-orange-50', medium: 'border-yellow-500 bg-yellow-50', low: 'border-green-500 bg-green-50' };
+      el.innerHTML = emergencies.map(em => `
+        <div class="border-l-4 ${severityColors[em.severity] || 'border-gray-300 bg-gray-50'} rounded-r-xl p-4">
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <span class="font-bold text-gray-800 capitalize">${em.emergency_type} Emergency</span>
+              <span class="ml-2 px-2 py-0.5 bg-red-100 text-red-700 text-xs font-bold rounded-full uppercase">${em.severity}</span>
+            </div>
+            <div class="text-right">
+              <p class="text-sm font-bold text-red-600">ETA: ${em.eta_minutes ? em.eta_minutes + ' min' : 'En route'}</p>
+              <p class="text-xs text-gray-400">${new Date(em.created_at).toLocaleTimeString()}</p>
+            </div>
+          </div>
+          ${em.patient ? `
+          <div class="grid grid-cols-2 gap-2 text-sm mb-3">
+            <div><p class="text-gray-500 text-xs">Patient</p><p class="font-bold">${em.patient.name}</p></div>
+            <div><p class="text-gray-500 text-xs">Blood Group</p><p class="font-bold text-red-600">${em.patient.blood_group || '—'}</p></div>
+            <div class="col-span-2"><p class="text-gray-500 text-xs">Medical History</p><p class="text-sm">${em.patient.medical_history || 'None'}</p></div>
+            ${em.patient.allergies ? `<div class="col-span-2"><p class="text-gray-500 text-xs">Allergies</p><p class="text-sm text-red-600">${em.patient.allergies}</p></div>` : ''}
+          </div>` : ''}
+          ${em.ai_specialist ? `<div class="bg-blue-50 text-blue-700 px-3 py-2 rounded-lg text-sm"><strong>AI Recommendation:</strong> ${em.ai_specialist}</div>` : ''}
+          <div class="flex gap-2 mt-3">
+            <span class="px-2 py-1 rounded-full text-xs font-bold ${statusBadge(em.status)}">${em.status.replace('_', ' ').toUpperCase()}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function statusBadge(status) {
+      const map = { requested: 'bg-yellow-100 text-yellow-700', ambulance_assigned: 'bg-blue-100 text-blue-700', en_route: 'bg-purple-100 text-purple-700', at_scene: 'bg-orange-100 text-orange-700', transporting: 'bg-red-100 text-red-700', arrived: 'bg-green-100 text-green-700' };
+      return map[status] || 'bg-gray-100 text-gray-700';
+    }
+
+    function updateBeds() {
+      document.getElementById('bed-modal').classList.remove('hidden');
+    }
+
+    async function saveBeds() {
+      if (!hospitalId) return;
+      const available = document.getElementById('bed-available').value;
+      const icu = document.getElementById('bed-icu').value;
+      try {
+        await apiPatch(`/hospital/${hospitalId}/beds?available_beds=${available}&icu_beds=${icu}`, {});
+        document.getElementById('bed-modal').classList.add('hidden');
+        await loadDashboard();
+      } catch (e) {
+        alert('Failed: ' + e.message);
+      }
+    }
+  </script>
+</body>
+</html>
