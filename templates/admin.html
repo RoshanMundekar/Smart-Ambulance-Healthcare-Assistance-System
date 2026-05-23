@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Control Panel — SmartAmbulance</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Outfit', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="/static/css/custom.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    #admin-live-map { height: 500px; width: 100%; border-radius: 1.25rem; z-index: 0; }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+  <nav class="bg-slate-900 sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl filter drop-shadow-[0_2px_8px_rgba(255,255,255,0.15)]">⚙️</span>
+      <div>
+        <h1 class="font-bold text-white font-display text-lg tracking-tight">Admin Control Panel</h1>
+        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Enterprise Command Hub</p>
+      </div>
+    </div>
+    <button onclick="logout()" class="text-slate-400 hover:text-white font-semibold text-xs uppercase tracking-wider bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl border border-white/5 transition-all">Logout</button>
+  </nav>
+
+  <!-- TAB NAV -->
+  <div class="bg-white border-b border-slate-150 sticky top-[73px] z-45 shadow-sm">
+    <div class="max-w-7xl mx-auto px-6 py-1 flex gap-2 overflow-x-auto">
+      <button onclick="showTab('analytics')" id="tab-analytics" class="tab-btn active-tab px-4 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all">📊 Analytics</button>
+      <button onclick="showTab('livemap')" id="tab-livemap" class="tab-btn px-4 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all">🗺️ Live Map</button>
+      <button onclick="showTab('emergencies')" id="tab-emergencies" class="tab-btn px-4 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all">🆘 Emergencies</button>
+      <button onclick="showTab('ambulances')" id="tab-ambulances" class="tab-btn px-4 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all">🚑 Fleet Manager</button>
+      <button onclick="showTab('users')" id="tab-users" class="tab-btn px-4 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all">👥 User Accounts</button>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-6 py-8">
+
+    <!-- ANALYTICS TAB -->
+    <div id="panel-analytics">
+      <div id="analytics-content" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm text-center animate-pulse"><div class="h-8 bg-slate-100 rounded-lg mb-2"></div><div class="h-4 bg-slate-50 rounded-lg"></div></div>
+        <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm text-center animate-pulse"><div class="h-8 bg-slate-100 rounded-lg mb-2"></div><div class="h-4 bg-slate-50 rounded-lg"></div></div>
+        <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm text-center animate-pulse"><div class="h-8 bg-slate-100 rounded-lg mb-2"></div><div class="h-4 bg-slate-50 rounded-lg"></div></div>
+        <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm text-center animate-pulse"><div class="h-8 bg-slate-100 rounded-lg mb-2"></div><div class="h-4 bg-slate-50 rounded-lg"></div></div>
+      </div>
+      <div id="analytics-detail" class="grid md:grid-cols-2 gap-6"></div>
+    </div>
+
+    <!-- LIVE MAP TAB -->
+    <div id="panel-livemap" class="hidden">
+      <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+        <div class="flex justify-between items-center mb-5">
+          <h2 class="text-lg font-bold text-slate-800 font-display">🗺️ Real-Time Fleet Distribution</h2>
+          <button onclick="refreshAdminMap()" class="text-red-600 text-sm font-semibold hover:underline flex items-center gap-1">🔄 Refresh</button>
+        </div>
+        <div id="admin-live-map"></div>
+        <p class="text-xs text-slate-400 mt-3 font-light">Coordinates map refreshes dynamically. Markers display status signals from active mobile units.</p>
+      </div>
+    </div>
+
+    <!-- EMERGENCIES TAB -->
+    <div id="panel-emergencies" class="hidden">
+      <h2 class="text-lg font-bold text-slate-800 mb-5 font-display">Active Incidents Queue</h2>
+      <div id="em-table" class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+        <div class="text-center text-slate-450 py-12">Loading table...</div>
+      </div>
+    </div>
+
+    <!-- AMBULANCES TAB -->
+    <div id="panel-ambulances" class="hidden">
+      <h2 class="text-lg font-bold text-slate-800 mb-5 font-display">Active Response Fleet</h2>
+      <div id="amb-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="text-center text-slate-450 py-12 col-span-3">Loading fleet...</div>
+      </div>
+    </div>
+
+    <!-- USERS TAB -->
+    <div id="panel-users" class="hidden">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+        <h2 class="text-lg font-bold text-slate-800 font-display">User Accounts & Directory</h2>
+        <select id="user-role-filter" onchange="loadUsers()" class="border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold uppercase tracking-wider bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+          <option value="">All Accounts</option>
+          <option value="patient">Patients</option>
+          <option value="driver">Drivers</option>
+          <option value="doctor">Doctors</option>
+          <option value="hospital_admin">Hospital Admins</option>
+        </select>
+      </div>
+      <div id="users-table" class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+        <div class="text-center text-slate-450 py-12">Loading accounts...</div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .tab-btn { color: #64748b; }
+    .active-tab { color: #dc2626; background-color: #fef2f2; }
+  </style>
+
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!requireAuth()) return;
+      loadAnalytics();
+    });
+
+    function showTab(tab) {
+      ['analytics', 'livemap', 'emergencies', 'ambulances', 'users'].forEach(t => {
+        document.getElementById(`panel-${t}`).classList.toggle('hidden', t !== tab);
+        document.getElementById(`tab-${t}`).classList.toggle('active-tab', t === tab);
+      });
+      if (tab === 'livemap') initAdminMap();
+      if (tab === 'emergencies') loadEmergencies();
+      if (tab === 'ambulances') loadAmbulances();
+      if (tab === 'users') loadUsers();
+    }
+
+    async function loadAnalytics() {
+      try {
+        const data = await apiGet('/admin/analytics');
+        document.getElementById('analytics-content').innerHTML = `
+          <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm text-center">
+            <div class="text-3xl font-black font-display text-blue-600">${data.users.total}</div>
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mt-2">Total Registers</div>
+          </div>
+          <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm text-center">
+            <div class="text-3xl font-black font-display text-red-600">${data.emergencies.total}</div>
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mt-2">Total Incidents</div>
+          </div>
+          <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm text-center">
+            <div class="text-3xl font-black font-display text-emerald-600">${data.ambulances.available}/${data.ambulances.total}</div>
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mt-2">Ambulances Online</div>
+          </div>
+          <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm text-center">
+            <div class="text-3xl font-black font-display text-purple-600">${data.emergencies.avg_response_minutes} min</div>
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mt-2">Average Dispatch ETA</div>
+          </div>
+        `;
+        document.getElementById('analytics-detail').innerHTML = `
+          <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+            <h3 class="font-bold text-slate-800 mb-4 font-display">User Role Distribution</h3>
+            <div class="space-y-3">
+              ${Object.entries(data.users.by_role).map(([role, count]) => `
+                <div class="flex justify-between items-center text-xs font-semibold text-slate-550 py-1 border-b border-slate-50">
+                  <span class="capitalize">${role.replace('_', ' ')}</span>
+                  <span class="bg-slate-50 text-slate-800 px-2.5 py-1 rounded-lg border border-slate-100 font-bold">${count}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+            <h3 class="font-bold text-slate-800 mb-4 font-display">Incidents by Category</h3>
+            <div class="space-y-3">
+              ${Object.entries(data.emergencies.by_type || {}).map(([type, count]) => `
+                <div class="flex justify-between items-center text-xs font-semibold text-slate-550 py-1 border-b border-slate-50">
+                  <span class="capitalize">${type}</span>
+                  <span class="bg-red-50 text-red-700 px-2.5 py-1 rounded-lg border border-red-100/30 font-bold">${count}</span>
+                </div>
+              `).join('') || '<p class="text-slate-400 text-sm font-light">No incident logs reported</p>'}
+            </div>
+          </div>
+        `;
+      } catch (e) {
+        document.getElementById('analytics-content').innerHTML = '<div class="col-span-4 text-center text-red-400 py-12">Failed to load analytics feed</div>';
+      }
+    }
+
+    async function loadEmergencies() {
+      try {
+        const data = await apiGet('/admin/emergency/active');
+        const el = document.getElementById('em-table');
+        if (!data.length) { el.innerHTML = '<div class="text-center text-slate-450 py-12 font-light text-sm">No active emergencies in queue</div>'; return; }
+        el.innerHTML = `
+          <table class="w-full text-sm">
+            <thead><tr class="text-left bg-slate-50 border-b border-slate-100 text-slate-400 uppercase text-[10px] tracking-wider font-bold">
+              <th class="px-6 py-4">ID</th>
+              <th class="px-6 py-4">Type</th>
+              <th class="px-6 py-4">Severity</th>
+              <th class="px-6 py-4">Status</th>
+              <th class="px-6 py-4">ETA</th>
+              <th class="px-6 py-4">Created Time</th>
+            </tr></thead>
+            <tbody class="divide-y divide-slate-50">
+              ${data.map(e => `<tr class="hover:bg-slate-50/50 transition-colors text-xs text-slate-700">
+                <td class="px-6 py-4 font-bold text-slate-900">#${e.id}</td>
+                <td class="px-6 py-4 capitalize font-medium">${e.emergency_type}</td>
+                <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${e.severity === 'critical' ? 'bg-red-50 text-red-700 border border-red-100/50' : 'bg-amber-50 text-amber-700 border border-amber-100/50'}">${e.severity.toUpperCase()}</span></td>
+                <td class="px-6 py-4 capitalize font-semibold text-slate-600">${e.status.replace('_',' ')}</td>
+                <td class="px-6 py-4 font-mono font-bold">${e.eta_minutes ? e.eta_minutes + ' min' : '—'}</td>
+                <td class="px-6 py-4 text-slate-400 font-light">${new Date(e.created_at).toLocaleString()}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>`;
+      } catch (e) {
+        document.getElementById('em-table').innerHTML = `<div class="text-center text-red-400 py-12">Error loading incidents: ${e.message}</div>`;
+      }
+    }
+
+    async function loadAmbulances() {
+      try {
+        const data = await apiGet('/admin/ambulances');
+        const statusColors = { available: 'bg-emerald-50 text-emerald-700 border-emerald-100', en_route: 'bg-blue-50 text-blue-700 border-blue-100', at_scene: 'bg-amber-50 text-amber-700 border-amber-100', transporting: 'bg-red-50 text-red-700 border-red-100', maintenance: 'bg-slate-100 text-slate-700 border-slate-200', offline: 'bg-slate-100 text-slate-400 border-slate-200' };
+        document.getElementById('amb-grid').innerHTML = data.map(a => `
+          <div class="bg-white rounded-3xl border border-slate-100 p-5 shadow-sm card-hover flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-start mb-4">
+                <div>
+                  <p class="font-bold text-slate-800 tracking-tight font-display text-base">${a.number}</p>
+                  <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-0.5">${a.type}</p>
+                </div>
+                <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${statusColors[a.status] || 'bg-slate-50 border-slate-100'}">${a.status.replace('_', ' ')}</span>
+              </div>
+              <div class="text-[11px] space-y-1 font-semibold text-slate-450 pt-3 border-t border-slate-50">
+                <p class="flex justify-between"><span>GPS Position</span><span class="font-mono text-slate-655">${a.lat.toFixed(5)}, ${a.lon.toFixed(5)}</span></p>
+                <p class="flex justify-between"><span>Status Signal</span><span class="${a.is_active ? 'text-emerald-600' : 'text-red-500'} font-bold">${a.is_active ? 'Online' : 'Offline'}</span></p>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {
+        document.getElementById('amb-grid').innerHTML = `<div class="text-center text-red-400 py-12 col-span-3">Error loading fleet: ${e.message}</div>`;
+      }
+    }
+
+    async function loadUsers() {
+      const role = document.getElementById('user-role-filter').value;
+      try {
+        let url = '/admin/users?';
+        if (role) url += `role=${role}`;
+        const data = await apiGet(url);
+        document.getElementById('users-table').innerHTML = `
+          <table class="w-full text-sm">
+            <thead><tr class="text-left bg-slate-50 border-b border-slate-100 text-slate-400 uppercase text-[10px] tracking-wider font-bold">
+              <th class="px-6 py-4">Name</th>
+              <th class="px-6 py-4">Email Address</th>
+              <th class="px-6 py-4">Access Role</th>
+              <th class="px-6 py-4">Phone Number</th>
+              <th class="px-6 py-4">State</th>
+            </tr></thead>
+            <tbody class="divide-y divide-slate-50">
+              ${data.map(u => `<tr class="hover:bg-slate-50/50 transition-colors text-xs text-slate-700">
+                <td class="px-6 py-4 font-bold text-slate-900 font-display">${u.full_name}</td>
+                <td class="px-6 py-4 text-slate-450">${u.email}</td>
+                <td class="px-6 py-4 capitalize font-semibold text-slate-600">${u.role.replace('_', ' ')}</td>
+                <td class="px-6 py-4 text-slate-450 font-mono">${u.phone || '—'}</td>
+                <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${u.is_active ? 'bg-emerald-50 text-emerald-700 border border-emerald-100/50' : 'bg-red-50 text-red-700 border border-red-100/50'}">${u.is_active ? 'Active' : 'Inactive'}</span></td>
+              </tr>`).join('')}
+            </tbody>
+          </table>`;
+      } catch (e) {
+        document.getElementById('users-table').innerHTML = `<div class="text-center text-red-400 py-12">Error loading accounts: ${e.message}</div>`;
+      }
+    }
+    // ── Admin Live Map ─────────────────────────────────────
+    let adminMap = null;
+    let adminMarkers = {};
+    let adminMapTimer = null;
+
+    const statusColors = {
+      available: '#22c55e',
+      en_route: '#3b82f6',
+      at_scene: '#f59e0b',
+      transporting: '#ef4444',
+      maintenance: '#6b7280',
+      offline: '#374151',
+    };
+
+    function initAdminMap() {
+      if (!adminMap) {
+        adminMap = L.map('admin-live-map').setView([20.5937, 78.9629], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+          maxZoom: 19,
+        }).addTo(adminMap);
+      }
+      refreshAdminMap();
+      // Auto-refresh every 10 s
+      if (adminMapTimer) clearInterval(adminMapTimer);
+      adminMapTimer = setInterval(refreshAdminMap, 10000);
+    }
+
+    async function refreshAdminMap() {
+      try {
+        const data = await apiGet('/admin/ambulances');
+        const bounds = [];
+        data.forEach(a => {
+          if (!a.lat || !a.lon) return;
+          const color = statusColors[a.status] || '#6b7280';
+          const icon = L.divIcon({
+            className: '',
+            html: `<div style="
+              background:${color};
+              border:3px solid white;
+              border-radius:50%;
+              width:36px;height:36px;
+              display:flex;align-items:center;justify-content:center;
+              font-size:18px;
+              box-shadow:0 2px 6px rgba(0,0,0,.4);
+            ">🚑</div>`,
+            iconSize: [36, 36],
+            iconAnchor: [18, 18],
+          });
+          const popup = `
+            <b>${a.number}</b><br>
+            Type: ${a.type}<br>
+            Status: <b style="color:${color}">${a.status.replace('_',' ')}</b><br>
+            Location: ${a.lat.toFixed(4)}, ${a.lon.toFixed(4)}
+          `;
+          if (adminMarkers[a.id]) {
+            adminMarkers[a.id].setLatLng([a.lat, a.lon])
+              .setIcon(icon)
+              .setPopupContent(popup);
+          } else {
+            adminMarkers[a.id] = L.marker([a.lat, a.lon], { icon })
+              .addTo(adminMap)
+              .bindPopup(popup);
+          }
+          bounds.push([a.lat, a.lon]);
+        });
+        if (bounds.length > 0) {
+          adminMap.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+        }
+      } catch (e) {
+        console.warn('Admin map refresh failed:', e.message);
+      }
+    }
+  </script>
+</body>
+</html>

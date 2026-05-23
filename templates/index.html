@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="AI-powered ambulance dispatch, real-time hospital matching, and intelligent symptom analysis — all in one platform."/>
+  <title>Smart Ambulance & Healthcare System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Outfit', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="/static/css/custom.css"/>
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col selection:bg-red-500 selection:text-white">
+
+  <!-- NAVBAR -->
+  <nav class="bg-white/80 backdrop-blur-md border-b border-slate-100 sticky top-0 z-50 transition-all duration-300">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-3xl filter drop-shadow-sm">🚑</span>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight text-red-600 leading-tight">SmartAmbulance</h1>
+          <p class="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Healthcare Network</p>
+        </div>
+      </div>
+      <div class="hidden md:flex items-center gap-8">
+        <a href="#features" class="text-sm font-medium text-slate-600 hover:text-red-600 transition-colors">Features</a>
+        <a href="#how-it-works" class="text-sm font-medium text-slate-600 hover:text-red-600 transition-colors">How It Works</a>
+        <a href="/login" class="text-sm font-semibold text-slate-700 hover:text-red-600 transition-colors">Login</a>
+        <a href="/login#register" class="bg-red-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-red-700 transition-all shadow-md shadow-red-500/10 hover:shadow-red-500/20 active:scale-[0.98]">Register</a>
+      </div>
+      <!-- Mobile menu button -->
+      <button onclick="toggleMobileMenu()" class="md:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors">
+        <svg id="menu-icon" class="w-6 h-6 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+    </div>
+    <!-- Mobile dropdown menu -->
+    <div id="mobile-menu" class="hidden md:hidden border-t border-slate-100 bg-white/95 px-6 py-4 flex flex-col gap-4 shadow-xl">
+      <a href="#features" onclick="toggleMobileMenu()" class="text-slate-600 font-medium py-1">Features</a>
+      <a href="#how-it-works" onclick="toggleMobileMenu()" class="text-slate-600 font-medium py-1">How It Works</a>
+      <a href="/login" onclick="toggleMobileMenu()" class="text-slate-600 font-medium py-1">Login</a>
+      <a href="/login#register" onclick="toggleMobileMenu()" class="bg-red-600 text-white text-center font-bold py-2.5 rounded-xl">Register</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="relative overflow-hidden bg-gradient-to-br from-slate-900 via-red-950 to-red-900 text-white py-28 px-6">
+    <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(239,68,68,0.15),transparent_45%)] pointer-events-none"></div>
+    <div class="max-w-5xl mx-auto text-center relative z-10">
+      <div class="inline-flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-full px-4 py-1.5 mb-8 text-xs font-semibold tracking-wider uppercase text-red-300">
+        <span class="w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
+        AI-Powered Emergency Care
+      </div>
+      <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-8 leading-[1.15] tracking-tight">
+        Next-Gen Emergency Care,<br/>
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-400">One Tap Away</span>
+      </h1>
+      <p class="text-lg md:text-xl text-slate-300 mb-12 max-w-2xl mx-auto font-light leading-relaxed">
+        Intelligent ambulance allocation, live map routing, real-time hospital triage, and fast AI symptom analysis — integrated into a single seamless hub.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+        <a href="/dashboard" class="w-full sm:w-auto bg-white text-red-700 font-bold px-8 py-4 rounded-2xl text-lg hover:bg-slate-50 transition-all shadow-xl shadow-red-900/40 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
+          🚑 Emergency Now
+        </a>
+        <a href="/login#register" class="w-full sm:w-auto border border-white/20 bg-white/5 hover:bg-white/10 text-white font-bold px-8 py-4 rounded-2xl text-lg transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center">
+          Get Started Free
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section class="bg-white py-14 border-b border-slate-100">
+    <div class="max-w-5xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+      <div class="p-2">
+        <div class="text-4xl font-extrabold text-red-600 tracking-tight">&lt; 3 Min</div>
+        <div class="text-sm font-medium text-slate-500 mt-1.5">Avg Response Time</div>
+      </div>
+      <div class="p-2">
+        <div class="text-4xl font-extrabold text-red-600 tracking-tight">500+</div>
+        <div class="text-sm font-medium text-slate-500 mt-1.5">Hospitals Connected</div>
+      </div>
+      <div class="p-2">
+        <div class="text-4xl font-extrabold text-red-600 tracking-tight">98%</div>
+        <div class="text-sm font-medium text-slate-500 mt-1.5">AI Diagnostic Match</div>
+      </div>
+      <div class="p-2">
+        <div class="text-4xl font-extrabold text-red-600 tracking-tight">24/7</div>
+        <div class="text-sm font-medium text-slate-500 mt-1.5">Live Dispatch Support</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features" class="py-24 px-6 bg-slate-50">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center max-w-2xl mx-auto mb-16">
+        <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-4 tracking-tight">Comprehensive Care Infrastructure</h2>
+        <p class="text-slate-500 leading-relaxed font-light">From urgent SOS calls to scheduled specialist follow-ups, our smart coordination layer takes care of everything.</p>
+      </div>
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div class="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 card-hover">
+          <div class="bg-red-50 text-red-600 rounded-2xl w-14 h-14 flex items-center justify-center text-3xl mb-6">🆘</div>
+          <h3 class="text-lg font-bold mb-3 text-slate-800 tracking-tight">One-Tap Emergency</h3>
+          <p class="text-sm text-slate-600 leading-relaxed font-light">Instantly broadcast your details. Our dispatch engine finds the closest ambulance and sets the best-matching hospital.</p>
+        </div>
+        <div class="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 card-hover">
+          <div class="bg-blue-50 text-blue-600 rounded-2xl w-14 h-14 flex items-center justify-center text-3xl mb-6">🧠</div>
+          <h3 class="text-lg font-bold mb-3 text-slate-800 tracking-tight">AI Symptom Analysis</h3>
+          <p class="text-sm text-slate-600 leading-relaxed font-light">Describe symptoms in natural speech. Our model analyzes conditions, severity risk levels, and recommends a doctor category.</p>
+        </div>
+        <div class="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 card-hover">
+          <div class="bg-emerald-50 text-emerald-600 rounded-2xl w-14 h-14 flex items-center justify-center text-3xl mb-6">🏥</div>
+          <h3 class="text-lg font-bold mb-3 text-slate-800 tracking-tight">Smart Hospital Match</h3>
+          <p class="text-sm text-slate-600 leading-relaxed font-light">Allocated dynamically based on real-time distance, bed occupancy levels, emergency facilities, and specialized departments.</p>
+        </div>
+        <div class="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 card-hover">
+          <div class="bg-amber-50 text-amber-600 rounded-2xl w-14 h-14 flex items-center justify-center text-3xl mb-6">📍</div>
+          <h3 class="text-lg font-bold mb-3 text-slate-800 tracking-tight">Live Ambulance Tracking</h3>
+          <p class="text-sm text-slate-600 leading-relaxed font-light">Track incoming drivers via high-frequency Leaflet maps with live status updates directly on your dashboard.</p>
+        </div>
+        <div class="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 card-hover">
+          <div class="bg-indigo-50 text-indigo-600 rounded-2xl w-14 h-14 flex items-center justify-center text-3xl mb-6">👨‍⚕️</div>
+          <h3 class="text-lg font-bold mb-3 text-slate-800 tracking-tight">Doctor Consultations</h3>
+          <p class="text-sm text-slate-600 leading-relaxed font-light">Book slots with top practitioners. Filter instantly by experience rating, price, specialized focus, and daily slots.</p>
+        </div>
+        <div class="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 card-hover">
+          <div class="bg-purple-50 text-purple-600 rounded-2xl w-14 h-14 flex items-center justify-center text-3xl mb-6">🔔</div>
+          <h3 class="text-lg font-bold mb-3 text-slate-800 tracking-tight">Real-Time Notification</h3>
+          <p class="text-sm text-slate-600 leading-relaxed font-light">Continuous status feeds keep patients, drivers, and doctors synchronized via custom WebSocket events.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how-it-works" class="py-24 px-6 bg-white">
+    <div class="max-w-4xl mx-auto">
+      <div class="text-center max-w-xl mx-auto mb-16">
+        <h2 class="text-3xl font-bold text-slate-900 tracking-tight mb-4">How it Works</h2>
+        <p class="text-slate-500 font-light leading-relaxed">A streamlined workflow that bridges patient emergencies to clinical readiness in seconds.</p>
+      </div>
+      <div class="relative pl-8 border-l border-slate-100 ml-4 space-y-12">
+        <div class="relative">
+          <div class="absolute -left-12 top-0.5 bg-red-50 border border-red-100 text-red-600 font-bold rounded-full w-8 h-8 flex items-center justify-center text-sm">1</div>
+          <h3 class="text-lg font-bold text-slate-800 tracking-tight">Trigger SOS / Consultation</h3>
+          <p class="text-slate-600 text-sm mt-1 font-light leading-relaxed">Your precise geographical location is calculated while the backend references your stored medical conditions.</p>
+        </div>
+        <div class="relative">
+          <div class="absolute -left-12 top-0.5 bg-red-50 border border-red-100 text-red-600 font-bold rounded-full w-8 h-8 flex items-center justify-center text-sm">2</div>
+          <h3 class="text-lg font-bold text-slate-800 tracking-tight">AI Matching Optimization</h3>
+          <p class="text-slate-600 text-sm mt-1 font-light leading-relaxed">The recommender analyzes critical symptoms, recommends specialized clinical support, and picks the target hospital.</p>
+        </div>
+        <div class="relative">
+          <div class="absolute -left-12 top-0.5 bg-red-50 border border-red-100 text-red-600 font-bold rounded-full w-8 h-8 flex items-center justify-center text-sm">3</div>
+          <h3 class="text-lg font-bold text-slate-800 tracking-tight">Instant Ambulance Dispatch</h3>
+          <p class="text-slate-600 text-sm mt-1 font-light leading-relaxed">The closest driver receives navigation directions to the patient, and the hospital is automatically alerted with the incoming patient data.</p>
+        </div>
+        <div class="relative">
+          <div class="absolute -left-12 top-0.5 bg-red-50 border border-red-100 text-red-600 font-bold rounded-full w-8 h-8 flex items-center justify-center text-sm">4</div>
+          <h3 class="text-lg font-bold text-slate-800 tracking-tight">En-Route Updates</h3>
+          <p class="text-slate-600 text-sm mt-1 font-light leading-relaxed">Track the driver's progress on the map. The emergency staff updates bed numbers, planning for the patient's arrival.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="bg-gradient-to-br from-red-600 to-red-800 text-white py-20 px-6 text-center relative overflow-hidden">
+    <div class="absolute inset-0 bg-[radial-gradient(circle_at_bottom,rgba(0,0,0,0.1),transparent_50%)] pointer-events-none"></div>
+    <div class="max-w-xl mx-auto relative z-10">
+      <h2 class="text-3xl font-bold mb-4 tracking-tight">Ready to Secure Your Health Network?</h2>
+      <p class="text-red-100 mb-10 font-light leading-relaxed">Register a secure account today. Keep your health profile up to date for instantaneous emergency routing when every second counts.</p>
+      <a href="/login" class="inline-block bg-white text-red-700 font-bold px-10 py-4 rounded-2xl hover:bg-slate-50 transition-all shadow-xl shadow-red-950/20 active:scale-[0.98]">
+        Create Free Account
+      </a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="bg-slate-900 border-t border-slate-800 text-slate-400 py-12 px-6 text-center text-sm mt-auto">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      <p class="font-light">© 2026 SmartAmbulance Healthcare System. All rights reserved.</p>
+      <p class="font-light">Emergency Line: <strong class="text-red-500">108</strong> | Non-Emergency: Support Portal</p>
+    </div>
+  </footer>
+
+  <script>
+    function toggleMobileMenu() {
+      const menu = document.getElementById('mobile-menu');
+      menu.classList.toggle('hidden');
+    }
+  </script>
+</body>
+</html>
+

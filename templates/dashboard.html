@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Patient Dashboard — SmartAmbulance</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Outfit', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="/static/css/custom.css"/>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+  <!-- NAVBAR -->
+  <nav class="bg-white/80 backdrop-blur-md border-b border-slate-100 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-3xl">🚑</span>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-red-600 leading-tight font-display">SmartAmbulance</h1>
+          <p class="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Patient Hub</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-5">
+        <button onclick="showNotifications()" class="relative p-2.5 rounded-xl hover:bg-slate-50 text-slate-600 hover:text-red-600 transition-colors">
+          🔔 <span id="notif-badge" class="hidden absolute top-1.5 right-1.5 bg-red-600 text-white text-[10px] w-4.5 h-4.5 rounded-full flex items-center justify-center font-bold">0</span>
+        </button>
+        <div class="flex items-center gap-3 pl-3 border-l border-slate-100">
+          <div class="w-10 h-10 bg-red-50 text-red-600 rounded-xl flex items-center justify-center font-bold font-display" id="avatar">P</div>
+          <div class="hidden sm:block text-left">
+            <span class="block text-sm font-semibold text-slate-800" id="user-name">Loading...</span>
+            <span class="block text-[10px] text-slate-400 font-medium uppercase tracking-wider">Account Active</span>
+          </div>
+        </div>
+        <button onclick="logout()" class="text-slate-500 hover:text-red-600 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-red-50/50 transition-all">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-7xl mx-auto px-6 py-10">
+
+    <!-- EMERGENCY ACTION HUB -->
+    <div class="relative overflow-hidden bg-gradient-to-br from-red-600 via-red-700 to-red-900 rounded-3xl p-8 md:p-12 mb-10 text-white shadow-xl shadow-red-500/10">
+      <div class="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(0,0,0,0.1),transparent_50%)] pointer-events-none"></div>
+      <div class="relative z-10 max-w-2xl mx-auto text-center">
+        <h2 class="text-3xl font-extrabold mb-3 tracking-tight font-display">Require Critical Support?</h2>
+        <p class="text-red-100/90 text-sm md:text-base mb-8 font-light leading-relaxed">
+          Click the button below to broadcast your GPS coordinates. Our AI dispatcher will automatically route the nearest paramedic crew and notify the emergency desk.
+        </p>
+        <button onclick="triggerEmergency()" id="emergency-btn"
+          class="emergency-pulse bg-white text-red-700 font-extrabold text-lg md:text-xl px-14 py-5 rounded-2xl shadow-xl hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all focus:outline-none focus:ring-4 focus:ring-red-300">
+          🆘 SOS EMERGENCY DISPATCH
+        </button>
+        <p class="text-red-200 text-xs font-semibold uppercase tracking-wider mt-6" id="location-status">Detecting GPS location...</p>
+      </div>
+    </div>
+
+    <!-- EMERGENCY STATUS CARD (hidden by default) -->
+    <div id="emergency-status-card" class="hidden bg-white rounded-3xl shadow-sm border border-slate-100 p-6 md:p-8 mb-10 animate-pulse-slow">
+      <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 bg-red-600 rounded-full animate-ping"></span>
+          <h3 class="text-lg font-bold text-slate-800 tracking-tight">Active Emergency Dispatch</h3>
+        </div>
+        <span id="em-status-badge" class="bg-red-50 text-red-700 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider">Requested</span>
+      </div>
+      <div class="grid sm:grid-cols-3 gap-4">
+        <div class="bg-slate-50/80 rounded-2xl p-4 border border-slate-100">
+          <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1.5">Ambulance allocated</p>
+          <p class="font-bold text-slate-700 text-sm" id="em-ambulance">Allocating...</p>
+        </div>
+        <div class="bg-slate-50/80 rounded-2xl p-4 border border-slate-100">
+          <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1.5">Estimated Arrival</p>
+          <p class="font-extrabold text-red-600 text-lg" id="em-eta">—</p>
+        </div>
+        <div class="bg-slate-50/80 rounded-2xl p-4 border border-slate-100">
+          <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1.5">Receiving Hospital</p>
+          <p class="font-bold text-slate-700 text-sm" id="em-hospital">Finding...</p>
+        </div>
+      </div>
+      <div class="mt-5 p-4 bg-blue-50/40 rounded-2xl border border-blue-100/50">
+        <p class="text-[10px] text-blue-500 font-bold uppercase tracking-wider mb-1">AI Smart Analysis</p>
+        <p class="text-slate-600 text-sm" id="em-ai-rec">Analyzing critical symptoms...</p>
+      </div>
+    </div>
+
+    <!-- QUICK ACTIONS -->
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+      <a href="/consultation" class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 card-hover flex items-center gap-4 group">
+        <div class="bg-blue-50 text-blue-600 rounded-2xl w-14 h-14 flex items-center justify-center text-2xl transition-all group-hover:scale-110">🩺</div>
+        <div>
+          <p class="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">Book Doctor</p>
+          <p class="text-xs text-slate-400">Search top specialists</p>
+        </div>
+      </a>
+      <a href="/consultation#symptoms" class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 card-hover flex items-center gap-4 group">
+        <div class="bg-emerald-50 text-emerald-600 rounded-2xl w-14 h-14 flex items-center justify-center text-2xl transition-all group-hover:scale-110">🧠</div>
+        <div>
+          <p class="font-bold text-slate-800 group-hover:text-emerald-600 transition-colors">AI Symptom Check</p>
+          <p class="text-xs text-slate-400">Analyze risk indicators</p>
+        </div>
+      </a>
+      <button onclick="viewBookings()" class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 card-hover flex items-center gap-4 text-left group">
+        <div class="bg-purple-50 text-purple-600 rounded-2xl w-14 h-14 flex items-center justify-center text-2xl transition-all group-hover:scale-110">📋</div>
+        <div>
+          <p class="font-bold text-slate-800 group-hover:text-purple-600 transition-colors">My Bookings</p>
+          <p class="text-xs text-slate-400">View appointments</p>
+        </div>
+      </button>
+      <button onclick="editProfile()" class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 card-hover flex items-center gap-4 text-left group">
+        <div class="bg-orange-50 text-orange-600 rounded-2xl w-14 h-14 flex items-center justify-center text-2xl transition-all group-hover:scale-110">👤</div>
+        <div>
+          <p class="font-bold text-slate-800 group-hover:text-orange-600 transition-colors">My Profile</p>
+          <p class="text-xs text-slate-400">Update medical card</p>
+        </div>
+      </button>
+    </div>
+
+    <!-- PROFILE + RECENT BOOKINGS -->
+    <div class="grid lg:grid-cols-3 gap-8">
+      <!-- Profile Card -->
+      <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+        <h3 class="font-bold text-slate-800 text-lg mb-6 pb-2 border-b border-slate-100 font-display">Health Profile Card</h3>
+        <div class="space-y-4" id="profile-details">
+          <div class="flex justify-between items-center"><span class="text-slate-400 text-sm font-medium">Blood Group</span><span class="font-bold text-red-600 text-sm px-2.5 py-1 bg-red-50 rounded-lg" id="p-blood">—</span></div>
+          <div class="flex justify-between items-center"><span class="text-slate-400 text-sm font-medium">Age</span><span class="font-semibold text-slate-700 text-sm" id="p-age">—</span></div>
+          <div class="flex justify-between items-center"><span class="text-slate-400 text-sm font-medium">Gender</span><span class="font-semibold text-slate-700 text-sm capitalize" id="p-gender">—</span></div>
+          <div class="pt-4 border-t border-slate-100">
+            <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1.5">Chronic Conditions</p>
+            <p class="text-sm font-medium text-slate-700" id="p-chronic">None</p>
+          </div>
+          <div class="pt-2">
+            <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1.5">Known Allergies</p>
+            <p class="text-sm font-medium text-slate-700" id="p-allergies">None</p>
+          </div>
+          <div class="pt-4 border-t border-slate-100">
+            <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1.5">Emergency Contact</p>
+            <p class="text-sm font-semibold text-slate-700" id="p-emergency">—</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Bookings -->
+      <div class="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+        <div class="flex justify-between items-center mb-6 pb-2 border-b border-slate-100">
+          <h3 class="font-bold text-slate-800 text-lg font-display">Recent Bookings</h3>
+          <button onclick="loadBookings()" class="text-red-600 text-sm font-semibold hover:underline flex items-center gap-1">🔄 Refresh</button>
+        </div>
+        <div id="bookings-list" class="space-y-4">
+          <div class="text-center text-slate-400 py-12">Loading your bookings...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ BOOKINGS HISTORY MODAL ═════════════════════════════════════════ -->
+  <div id="bookings-modal" class="hidden fixed inset-0 z-50 flex justify-end">
+    <!-- Backdrop -->
+    <div onclick="closeBookingsModal()" class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+
+    <!-- Drawer -->
+    <div class="relative w-full max-w-lg bg-gray-50 h-full shadow-2xl flex flex-col">
+
+      <!-- Header -->
+      <div class="sticky top-0 bg-white border-b px-6 py-4 z-10">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h2 class="text-xl font-bold text-gray-800">📋 My Bookings</h2>
+            <p class="text-sm text-gray-500">Full booking &amp; appointment history</p>
+          </div>
+          <button onclick="closeBookingsModal()" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-800 transition text-xl">&times;</button>
+        </div>
+        <!-- Filter tabs -->
+        <div class="flex gap-1 overflow-x-auto" id="bk-tab-bar">
+          <button onclick="filterBookings('all')"       id="bk-tab-all"       class="bk-tab active-bk-tab px-3 py-1.5 rounded-lg text-xs font-semibold transition">All</button>
+          <button onclick="filterBookings('pending')"   id="bk-tab-pending"   class="bk-tab px-3 py-1.5 rounded-lg text-xs font-semibold transition">⏳ Pending</button>
+          <button onclick="filterBookings('confirmed')" id="bk-tab-confirmed" class="bk-tab px-3 py-1.5 rounded-lg text-xs font-semibold transition">✅ Confirmed</button>
+          <button onclick="filterBookings('completed')" id="bk-tab-completed" class="bk-tab px-3 py-1.5 rounded-lg text-xs font-semibold transition">🏁 Completed</button>
+          <button onclick="filterBookings('cancelled')" id="bk-tab-cancelled" class="bk-tab px-3 py-1.5 rounded-lg text-xs font-semibold transition">❌ Cancelled</button>
+        </div>
+      </div>
+
+      <!-- Body -->
+      <div id="bk-list" class="flex-1 overflow-y-auto p-4 space-y-3">
+        <div class="text-center text-gray-400 py-12">Loading bookings…</div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .bk-tab { color: #6b7280; background: transparent; }
+    .active-bk-tab { color: #dc2626; background: #fee2e2; }
+  </style>
+
+  <!-- ═══ PROFILE EDITOR MODAL ══════════════════════════════════════════ -->
+  <div id="profile-modal" class="hidden fixed inset-0 z-50 flex justify-end">
+    <!-- Backdrop -->
+    <div onclick="closeProfileModal()" class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+
+    <!-- Drawer -->
+    <div class="relative w-full max-w-md bg-white h-full shadow-2xl overflow-y-auto flex flex-col">
+      <!-- Header -->
+      <div class="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
+        <div>
+          <h2 class="text-xl font-bold text-gray-800">My Profile</h2>
+          <p class="text-sm text-gray-500">Update your health &amp; contact details</p>
+        </div>
+        <button onclick="closeProfileModal()" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-800 transition text-xl">&times;</button>
+      </div>
+
+      <!-- Form -->
+      <form id="profile-form" onsubmit="saveProfile(event)" class="flex-1 p-6 space-y-5">
+
+        <!-- Status banner -->
+        <div id="profile-error" class="hidden bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm"></div>
+        <div id="profile-success" class="hidden bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm">✅ Profile updated successfully!</div>
+
+        <!-- Personal -->
+        <fieldset class="space-y-4">
+          <legend class="text-xs font-bold uppercase tracking-widest text-gray-400">Personal</legend>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="pf-name">Full Name</label>
+            <input id="pf-name" type="text" required
+              class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+              placeholder="Your full name"/>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1" for="pf-age">Age</label>
+              <input id="pf-age" type="number" min="1" max="120"
+                class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                placeholder="e.g. 30"/>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1" for="pf-gender">Gender</label>
+              <select id="pf-gender"
+                class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
+                <option value="">Select…</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="pf-phone">Phone</label>
+            <input id="pf-phone" type="tel"
+              class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+              placeholder="+91 9876543210"/>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="pf-address">Address</label>
+            <input id="pf-address" type="text"
+              class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+              placeholder="Street, City"/>
+          </div>
+        </fieldset>
+
+        <hr class="border-gray-100"/>
+
+        <!-- Medical -->
+        <fieldset class="space-y-4">
+          <legend class="text-xs font-bold uppercase tracking-widest text-gray-400">Medical</legend>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="pf-blood">Blood Group</label>
+            <select id="pf-blood"
+              class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
+              <option value="">Select…</option>
+              <option>A+</option><option>A-</option>
+              <option>B+</option><option>B-</option>
+              <option>AB+</option><option>AB-</option>
+              <option>O+</option><option>O-</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="pf-history">Medical History</label>
+            <textarea id="pf-history" rows="2"
+              class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+              placeholder="Past surgeries, conditions…"></textarea>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="pf-chronic">Chronic Conditions</label>
+            <textarea id="pf-chronic" rows="2"
+              class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+              placeholder="Diabetes, Hypertension…"></textarea>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="pf-allergies">Allergies</label>
+            <textarea id="pf-allergies" rows="2"
+              class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+              placeholder="Penicillin, Peanuts…"></textarea>
+          </div>
+        </fieldset>
+
+        <hr class="border-gray-100"/>
+
+        <!-- Emergency Contact -->
+        <fieldset class="space-y-4">
+          <legend class="text-xs font-bold uppercase tracking-widest text-gray-400">Emergency Contact</legend>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="pf-ec-name">Contact Name</label>
+            <input id="pf-ec-name" type="text"
+              class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+              placeholder="e.g. Jane Doe"/>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="pf-ec-phone">Contact Phone</label>
+            <input id="pf-ec-phone" type="tel"
+              class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+              placeholder="+91 9876543210"/>
+          </div>
+        </fieldset>
+
+        <!-- Submit -->
+        <div class="sticky bottom-0 bg-white pt-4 pb-2 -mx-6 px-6 border-t mt-4">
+          <button id="pf-save-btn" type="submit"
+            class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition focus:outline-none focus:ring-4 focus:ring-red-300">
+            Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- NOTIFICATION PANEL -->
+  <div id="notif-panel" class="hidden fixed top-16 right-4 w-80 bg-white rounded-2xl shadow-2xl z-50 overflow-hidden">
+    <div class="bg-red-600 text-white px-4 py-3 flex justify-between items-center">
+      <span class="font-bold">Notifications</span>
+      <button onclick="hideNotifications()" class="text-white text-xl">×</button>
+    </div>
+    <div id="notif-list" class="max-h-64 overflow-y-auto p-2 text-sm text-gray-600">
+      <div class="p-4 text-center text-gray-400">No notifications</div>
+    </div>
+  </div>
+
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/auth.js"></script>
+  <script src="/static/js/emergency.js"></script>
+  <script>
+    let userLocation = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!requireAuth()) return;
+      const user = getCurrentUser();
+      if (user) {
+        document.getElementById('user-name').textContent = user.full_name.split(' ')[0];
+        document.getElementById('avatar').textContent = user.full_name.charAt(0).toUpperCase();
+        document.getElementById('p-blood').textContent = user.blood_group || '—';
+        document.getElementById('p-age').textContent = user.age ? `${user.age} yrs` : '—';
+        document.getElementById('p-gender').textContent = user.gender || '—';
+        document.getElementById('p-chronic').textContent = user.chronic_conditions || 'None';
+        document.getElementById('p-allergies').textContent = user.allergies || 'None';
+        document.getElementById('p-emergency').textContent = user.emergency_contact_name
+          ? `${user.emergency_contact_name} (${user.emergency_contact_phone})`
+          : '—';
+      }
+      detectLocation();
+      loadBookings();
+      initWebSocket(user?.id);
+    });
+
+    function detectLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          pos => {
+            userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            document.getElementById('location-status').textContent = `📍 Location detected (${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)})`;
+          },
+          () => {
+            document.getElementById('location-status').textContent = '⚠️ Location access denied. Please enable location.';
+          }
+        );
+      }
+    }
+
+    async function loadBookings() {
+      try {
+        const data = await apiGet('/appointments/my-bookings');
+        const container = document.getElementById('bookings-list');
+        if (!data.length) {
+          container.innerHTML = '<div class="text-center text-gray-400 py-8">No bookings yet</div>';
+          return;
+        }
+        container.innerHTML = data.slice(0, 5).map(b => `
+          <div class="flex items-center justify-between p-3 rounded-xl bg-gray-50">
+            <div>
+              <p class="font-semibold text-gray-800 capitalize">${b.booking_type} Booking</p>
+              <p class="text-xs text-gray-500">${b.appointment_date || new Date(b.created_at).toLocaleDateString()}</p>
+              ${b.ai_diagnosis ? `<p class="text-xs text-blue-600">AI: ${b.ai_diagnosis}</p>` : ''}
+            </div>
+            <span class="px-2 py-1 rounded-full text-xs font-bold ${statusColor(b.booking_status)}">${b.booking_status}</span>
+          </div>
+        `).join('');
+      } catch (e) {
+        document.getElementById('bookings-list').innerHTML = '<div class="text-center text-red-400 py-4">Failed to load bookings</div>';
+      }
+    }
+
+    function statusColor(status) {
+      const map = { pending: 'bg-yellow-100 text-yellow-700', confirmed: 'bg-blue-100 text-blue-700', completed: 'bg-green-100 text-green-700', cancelled: 'bg-red-100 text-red-700', in_progress: 'bg-purple-100 text-purple-700' };
+      return map[status] || 'bg-gray-100 text-gray-700';
+    }
+
+    function showNotifications() { document.getElementById('notif-panel').classList.remove('hidden'); }
+    function hideNotifications() { document.getElementById('notif-panel').classList.add('hidden'); }
+    function viewBookings() { openBookingsModal(); }
+
+    // ── Bookings History Modal ─────────────────────────────────
+    let _allBookings = [];
+    let _activeFilter = 'all';
+
+    async function openBookingsModal() {
+      document.getElementById('bookings-modal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+      filterBookings('all');          // reset to All tab
+      await loadAllBookings();
+    }
+
+    function closeBookingsModal() {
+      document.getElementById('bookings-modal').classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+
+    async function loadAllBookings() {
+      const el = document.getElementById('bk-list');
+      el.innerHTML = '<div class="text-center text-gray-400 py-12">Loading…</div>';
+      try {
+        _allBookings = await apiGet('/appointments/my-bookings');
+        renderBookings();
+      } catch (e) {
+        el.innerHTML = `<div class="text-center text-red-400 py-12">❌ ${e.message}</div>`;
+      }
+    }
+
+    function filterBookings(status) {
+      _activeFilter = status;
+      // Update tab styles
+      ['all','pending','confirmed','completed','cancelled'].forEach(t => {
+        const btn = document.getElementById(`bk-tab-${t}`);
+        btn.classList.toggle('active-bk-tab', t === status);
+        btn.classList.toggle('bk-tab', true);
+      });
+      if (_allBookings.length) renderBookings();
+    }
+
+    function renderBookings() {
+      const el   = document.getElementById('bk-list');
+      const list = _activeFilter === 'all'
+        ? _allBookings
+        : _allBookings.filter(b => b.booking_status === _activeFilter);
+
+      if (!list.length) {
+        el.innerHTML = '<div class="text-center text-gray-400 py-12">No bookings found.</div>';
+        return;
+      }
+      el.innerHTML = list.map(b => bookingCard(b)).join('');
+    }
+
+    function bookingCard(b) {
+      const statusCls = statusColor(b.booking_status);
+      const date      = b.appointment_date
+        ? `📅 ${b.appointment_date}${b.appointment_time ? ' ' + b.appointment_time.slice(0,5) : ''}`
+        : `🕐 ${new Date(b.created_at).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })}`;
+      const canCancel = ['pending','confirmed'].includes(b.booking_status);
+
+      return `
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4" id="bk-card-${b.id}">
+          <!-- Top row -->
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <p class="font-bold text-gray-800 capitalize">${b.booking_type.replace('_',' ')} Booking</p>
+              <p class="text-xs text-gray-400 mt-0.5">#${b.id} · ${date}</p>
+            </div>
+            <span class="px-2 py-1 rounded-full text-xs font-bold shrink-0 ${statusCls} capitalize">${b.booking_status.replace('_',' ')}</span>
+          </div>
+
+          <!-- Details grid -->
+          <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm mb-3">
+            ${b.symptoms ? `<div class="col-span-2"><span class="text-gray-400">Symptoms: </span><span class="text-gray-700">${b.symptoms}</span></div>` : ''}
+            ${b.ai_diagnosis ? `<div class="col-span-2"><span class="text-gray-400">AI Diagnosis: </span><span class="text-blue-600 font-medium">${b.ai_diagnosis}</span>${b.ai_confidence_score != null ? ` <span class="text-gray-400 text-xs">(${(b.ai_confidence_score*100).toFixed(0)}% confidence)</span>` : ''}</div>` : ''}
+            ${b.symptom_severity ? `<div><span class="text-gray-400">Severity: </span><span class="font-medium capitalize">${b.symptom_severity}</span></div>` : ''}
+            ${b.total_cost != null ? `<div><span class="text-gray-400">Cost: </span><span class="font-semibold text-green-600">₹${b.total_cost.toFixed(2)}</span></div>` : ''}
+            ${b.ambulance_required ? `<div class="col-span-2 text-orange-600 font-medium text-xs">🚑 Ambulance requested</div>` : ''}
+            ${b.notes ? `<div class="col-span-2"><span class="text-gray-400">Notes: </span><span class="text-gray-600 text-xs">${b.notes}</span></div>` : ''}
+          </div>
+
+          <!-- Actions -->
+          ${canCancel ? `
+            <button onclick="cancelBooking(${b.id})"
+              class="w-full mt-1 border border-red-300 text-red-600 hover:bg-red-50 text-xs font-semibold py-2 rounded-xl transition">
+              Cancel Booking
+            </button>` : ''}
+        </div>`;
+    }
+
+    async function cancelBooking(id) {
+      if (!confirm('Cancel this booking?')) return;
+      try {
+        await apiPatch(`/appointments/${id}/cancel`, {});
+        // Update in-memory list and re-render
+        const bk = _allBookings.find(b => b.id === id);
+        if (bk) bk.booking_status = 'cancelled';
+        renderBookings();
+        // Also refresh the small Recent Bookings card on the dashboard
+        loadBookings();
+      } catch (e) {
+        alert('❌ ' + e.message);
+      }
+    }
+
+    // ── Profile Modal ──────────────────────────────────────────
+    function editProfile() { openProfileModal(); }
+
+    function openProfileModal() {
+      const u = getCurrentUser();
+      if (!u) return;
+      // Pre-fill all fields from cached user data
+      document.getElementById('pf-name').value          = u.full_name              || '';
+      document.getElementById('pf-age').value           = u.age                    || '';
+      document.getElementById('pf-gender').value        = u.gender                 || '';
+      document.getElementById('pf-phone').value         = u.phone                  || '';
+      document.getElementById('pf-address').value       = u.address                || '';
+      document.getElementById('pf-blood').value         = u.blood_group            || '';
+      document.getElementById('pf-history').value       = u.medical_history        || '';
+      document.getElementById('pf-chronic').value       = u.chronic_conditions     || '';
+      document.getElementById('pf-allergies').value     = u.allergies              || '';
+      document.getElementById('pf-ec-name').value       = u.emergency_contact_name  || '';
+      document.getElementById('pf-ec-phone').value      = u.emergency_contact_phone || '';
+      // Reset banners
+      document.getElementById('profile-error').classList.add('hidden');
+      document.getElementById('profile-success').classList.add('hidden');
+      document.getElementById('profile-modal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeProfileModal() {
+      document.getElementById('profile-modal').classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+
+    async function saveProfile(e) {
+      e.preventDefault();
+      const errEl  = document.getElementById('profile-error');
+      const sucEl  = document.getElementById('profile-success');
+      const btn    = document.getElementById('pf-save-btn');
+      errEl.classList.add('hidden');
+      sucEl.classList.add('hidden');
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+
+      const payload = {
+        full_name:               document.getElementById('pf-name').value.trim()    || null,
+        age:                     parseInt(document.getElementById('pf-age').value)   || null,
+        gender:                  document.getElementById('pf-gender').value          || null,
+        phone:                   document.getElementById('pf-phone').value.trim()    || null,
+        address:                 document.getElementById('pf-address').value.trim()  || null,
+        blood_group:             document.getElementById('pf-blood').value           || null,
+        medical_history:         document.getElementById('pf-history').value.trim()  || null,
+        chronic_conditions:      document.getElementById('pf-chronic').value.trim()  || null,
+        allergies:               document.getElementById('pf-allergies').value.trim()|| null,
+        emergency_contact_name:  document.getElementById('pf-ec-name').value.trim() || null,
+        emergency_contact_phone: document.getElementById('pf-ec-phone').value.trim()|| null,
+      };
+
+      // Strip null values so the server only updates what was provided
+      Object.keys(payload).forEach(k => payload[k] === null && delete payload[k]);
+
+      try {
+        const updated = await apiPut('/auth/me', payload);
+
+        // ✅ Sync updated user back into localStorage so UI stays fresh
+        const current = getCurrentUser();
+        const merged  = { ...current, ...updated };
+        localStorage.setItem('user', JSON.stringify(merged));
+
+        // Refresh the Health Profile card on the dashboard
+        document.getElementById('user-name').textContent  = updated.full_name.split(' ')[0];
+        document.getElementById('avatar').textContent     = updated.full_name.charAt(0).toUpperCase();
+        document.getElementById('p-blood').textContent    = updated.blood_group      || '—';
+        document.getElementById('p-age').textContent      = updated.age ? `${updated.age} yrs` : '—';
+        document.getElementById('p-gender').textContent   = updated.gender           || '—';
+        document.getElementById('p-chronic').textContent  = updated.chronic_conditions|| 'None';
+        document.getElementById('p-allergies').textContent= updated.allergies        || 'None';
+        document.getElementById('p-emergency').textContent= updated.emergency_contact_name
+          ? `${updated.emergency_contact_name} (${updated.emergency_contact_phone})`
+          : '—';
+
+        sucEl.classList.remove('hidden');
+        setTimeout(closeProfileModal, 1400);
+      } catch (err) {
+        errEl.textContent = '❌ ' + err.message;
+        errEl.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Save Changes';
+      }
+    }
+  </script>
+</body>
+</html>
