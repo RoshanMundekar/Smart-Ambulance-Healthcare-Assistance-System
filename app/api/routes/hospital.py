@@ -19,8 +19,12 @@ def hospital_dashboard(
     current_user: User = Depends(require_hospital_admin),
 ):
     # Find hospital managed by this admin
-    # In production you'd link hospital_admin -> hospital; using first hospital as demo
-    hospital = db.query(Hospital).filter(Hospital.is_active == True).first()
+    hospital = None
+    if current_user.hospital_id:
+        hospital = db.query(Hospital).filter(Hospital.id == current_user.hospital_id, Hospital.is_active == True).first()
+    if not hospital:
+        # Fallback to the first active hospital for demo or backward compatibility
+        hospital = db.query(Hospital).filter(Hospital.is_active == True).first()
     if not hospital:
         raise HTTPException(status_code=404, detail="Hospital not found")
 
@@ -128,6 +132,8 @@ def update_bed_count(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_hospital_admin),
 ):
+    if current_user.role != "system_admin" and current_user.hospital_id != hospital_id:
+        raise HTTPException(status_code=403, detail="You do not have permission to update this hospital's bed count.")
     hospital = db.query(Hospital).filter(Hospital.id == hospital_id).first()
     if not hospital:
         raise HTTPException(status_code=404, detail="Hospital not found")
@@ -136,6 +142,61 @@ def update_bed_count(
         hospital.icu_beds = icu_beds
     db.commit()
     return {"message": "Bed count updated", "available_beds": available_beds}
+
+
+@router.get("/drivers")
+def get_hospital_drivers(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_hospital_admin),
+):
+    """Get all drivers linked to ambulances assigned to the managed hospital."""
+    from app.models.ambulance import Ambulance, Driver as DriverModel
+    hospital = None
+    if current_user.hospital_id:
+        hospital = db.query(Hospital).filter(Hospital.id == current_user.hospital_id, Hospital.is_active == True).first()
+    if not hospital:
+        # Fallback to first active hospital
+        hospital = db.query(Hospital).filter(Hospital.is_active == True).first()
+    if not hospital:
+        raise HTTPException(status_code=404, detail="Hospital not found")
+
+    # Get all ambulances for this hospital
+    ambulances = db.query(Ambulance).filter(Ambulance.hospital_id == hospital.id).all()
+    ambulance_map = {a.id: a for a in ambulances}
+
+    # Get drivers linked to those ambulances
+    ambulance_ids = [a.id for a in ambulances]
+    drivers = db.query(DriverModel).filter(DriverModel.ambulance_id.in_(ambulance_ids)).all() if ambulance_ids else []
+
+    result = []
+    for d in drivers:
+        amb = ambulance_map.get(d.ambulance_id)
+        # Check if driver has an active emergency
+        active_em = db.query(EmergencyRequest).filter(
+            EmergencyRequest.assigned_driver_id == d.id,
+            EmergencyRequest.status.notin_(["completed", "cancelled"]),
+        ).first()
+        result.append({
+            "id": d.id,
+            "driver_name": d.driver_name,
+            "phone": d.phone,
+            "license_number": d.license_number,
+            "experience_years": d.experience_years,
+            "performance_rating": float(d.performance_rating or 0),
+            "total_trips": d.total_trips,
+            "is_available": d.is_available,
+            "is_active": d.is_active,
+            "current_latitude": float(d.current_latitude or 0),
+            "current_longitude": float(d.current_longitude or 0),
+            "last_location_update": d.last_location_update.isoformat() if d.last_location_update else None,
+            "ambulance_number": amb.ambulance_number if amb else None,
+            "ambulance_status": amb.status if amb else None,
+            "ambulance_type": amb.vehicle_type if amb else None,
+            "active_emergency_id": active_em.id if active_em else None,
+            "active_emergency_type": active_em.emergency_type if active_em else None,
+            "active_emergency_status": active_em.status if active_em else None,
+        })
+    return result
 
 
 @router.get("/all")

@@ -54,6 +54,7 @@ class UserResponse(BaseModel):
     emergency_contact_name: Optional[str]
     emergency_contact_phone: Optional[str]
     role: str
+    hospital_id: Optional[int] = None
     is_active: bool
     latitude: Optional[float]
     longitude: Optional[float]

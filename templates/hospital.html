@@ -40,68 +40,121 @@
     </div>
   </nav>
 
+  <!-- TAB NAV -->
+  <div class="bg-white border-b border-slate-100 sticky top-[73px] z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-6 py-1 flex gap-2 overflow-x-auto">
+      <button onclick="showHospitalTab('overview')" id="htab-overview" class="htab-btn active-htab px-4 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all">🏥 Overview</button>
+      <button onclick="showHospitalTab('drivers')" id="htab-drivers" class="htab-btn px-4 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all">🚑 Driver Status</button>
+    </div>
+  </div>
+
   <div class="max-w-7xl mx-auto px-6 py-8">
 
-    <!-- STATS ROW -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-5 mb-8">
-      <div class="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm text-center">
-        <div class="text-3xl font-black font-display text-red-600" id="stat-emergencies">—</div>
-        <div class="text-xs font-semibold text-slate-450 uppercase tracking-wider mt-2">Active Emergencies</div>
-      </div>
-      <div class="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm text-center">
-        <div class="text-3xl font-black font-display text-blue-600" id="stat-appointments">—</div>
-        <div class="text-xs font-semibold text-slate-450 uppercase tracking-wider mt-2">Today's Appointments</div>
-      </div>
-      <div class="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm text-center">
-        <div class="text-3xl font-black font-display text-emerald-600" id="stat-doctors">—</div>
-        <div class="text-xs font-semibold text-slate-450 uppercase tracking-wider mt-2">Doctors On Duty</div>
-      </div>
-      <div class="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm text-center">
-        <div class="text-3xl font-black font-display text-purple-600" id="stat-beds">—</div>
-        <div class="text-xs font-semibold text-slate-450 uppercase tracking-wider mt-2">Available Beds</div>
-      </div>
-    </div>
-
-    <div class="grid lg:grid-cols-3 gap-8">
-      <!-- INCOMING EMERGENCIES -->
-      <div class="lg:col-span-2">
-        <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 md:p-8">
-          <div class="flex justify-between items-center mb-6 pb-2 border-b border-slate-100">
-            <h2 class="text-lg font-bold text-slate-800 font-display">🆘 Active Triage Queue</h2>
-            <button onclick="loadDashboard()" class="text-red-600 text-sm font-semibold hover:underline flex items-center gap-1">🔄 Refresh</button>
-          </div>
-          <div id="emergencies-list" class="space-y-5">
-            <div class="text-center text-slate-400 py-12">Loading emergencies...</div>
-          </div>
+    <!-- OVERVIEW TAB -->
+    <div id="hpanel-overview">
+      <!-- STATS ROW -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-5 mb-8">
+        <div class="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm text-center">
+          <div class="text-3xl font-black font-display text-red-600" id="stat-emergencies">—</div>
+          <div class="text-xs font-semibold text-slate-450 uppercase tracking-wider mt-2">Active Emergencies</div>
+        </div>
+        <div class="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm text-center">
+          <div class="text-3xl font-black font-display text-blue-600" id="stat-appointments">—</div>
+          <div class="text-xs font-semibold text-slate-450 uppercase tracking-wider mt-2">Today's Appointments</div>
+        </div>
+        <div class="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm text-center">
+          <div class="text-3xl font-black font-display text-emerald-600" id="stat-doctors">—</div>
+          <div class="text-xs font-semibold text-slate-450 uppercase tracking-wider mt-2">Doctors On Duty</div>
+        </div>
+        <div class="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm text-center">
+          <div class="text-3xl font-black font-display text-purple-600" id="stat-beds">—</div>
+          <div class="text-xs font-semibold text-slate-450 uppercase tracking-wider mt-2">Available Beds</div>
         </div>
       </div>
 
-      <!-- QUICK ACTIONS -->
-      <div class="space-y-6">
-        <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
-          <h3 class="font-bold text-slate-800 mb-4 font-display">Operations Desk</h3>
-          <div class="space-y-3">
-            <button onclick="updateBeds()" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-4 py-3.5 rounded-2xl text-xs uppercase tracking-wider transition-all text-left flex items-center gap-2">
-              🛏️ Update Bed Capacity
-            </button>
-            <a href="/consultation" class="block w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-4 py-3.5 rounded-2xl text-xs uppercase tracking-wider transition-all text-left flex items-center gap-2">
-              👨‍⚕️ Manage Practitioner Directory
-            </a>
+      <div class="grid lg:grid-cols-3 gap-8">
+        <!-- INCOMING EMERGENCIES -->
+        <div class="lg:col-span-2">
+          <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 md:p-8">
+            <div class="flex justify-between items-center mb-6 pb-2 border-b border-slate-100">
+              <h2 class="text-lg font-bold text-slate-800 font-display">🆘 Active Triage Queue</h2>
+              <button onclick="loadDashboard()" class="text-red-600 text-sm font-semibold hover:underline flex items-center gap-1">🔄 Refresh</button>
+            </div>
+            <div id="emergencies-list" class="space-y-5">
+              <div class="text-center text-slate-400 py-12">Loading emergencies...</div>
+            </div>
           </div>
         </div>
 
-        <!-- Hospital Info -->
-        <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
-          <h3 class="font-bold text-slate-800 mb-4 font-display">Facility Profile</h3>
-          <div class="space-y-3 text-sm" id="hospital-info">
-            <div class="animate-pulse space-y-3">
-              <div class="h-4 bg-slate-100 rounded-lg"></div>
-              <div class="h-4 bg-slate-100 rounded-lg w-3/4"></div>
+        <!-- QUICK ACTIONS + Hospital Info -->
+        <div class="space-y-6">
+          <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+            <h3 class="font-bold text-slate-800 mb-4 font-display">Operations Desk</h3>
+            <div class="space-y-3">
+              <button onclick="updateBeds()" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-4 py-3.5 rounded-2xl text-xs uppercase tracking-wider transition-all text-left flex items-center gap-2">
+                🛏️ Update Bed Capacity
+              </button>
+              <button onclick="showHospitalTab('drivers')" class="w-full bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold px-4 py-3.5 rounded-2xl text-xs uppercase tracking-wider transition-all text-left flex items-center gap-2">
+                🚑 View Driver Status
+              </button>
+              <a href="/consultation" class="block w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-4 py-3.5 rounded-2xl text-xs uppercase tracking-wider transition-all text-left flex items-center gap-2">
+                👨‍⚕️ Manage Practitioner Directory
+              </a>
+            </div>
+          </div>
+
+          <!-- Hospital Info -->
+          <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+            <h3 class="font-bold text-slate-800 mb-4 font-display">Facility Profile</h3>
+            <div class="space-y-3 text-sm" id="hospital-info">
+              <div class="animate-pulse space-y-3">
+                <div class="h-4 bg-slate-100 rounded-lg"></div>
+                <div class="h-4 bg-slate-100 rounded-lg w-3/4"></div>
+              </div>
             </div>
           </div>
         </div>
       </div>
+    </div><!-- end overview -->
+
+    <!-- DRIVER STATUS TAB -->
+    <div id="hpanel-drivers" class="hidden">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-800 font-display">🚑 Driver & Fleet Status</h2>
+          <p class="text-xs text-slate-400 mt-1">Real-time status of all drivers assigned to your hospital's ambulances</p>
+        </div>
+        <button onclick="loadDriverStatus()" class="bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all flex items-center gap-2">
+          🔄 Refresh
+        </button>
+      </div>
+
+      <!-- Driver summary stats -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="driver-stats-row">
+        <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm text-center">
+          <div class="text-2xl font-black font-display text-slate-800" id="dstat-total">—</div>
+          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Total Drivers</div>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm text-center">
+          <div class="text-2xl font-black font-display text-emerald-600" id="dstat-available">—</div>
+          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Available</div>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm text-center">
+          <div class="text-2xl font-black font-display text-blue-600" id="dstat-onduty">—</div>
+          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">On Mission</div>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm text-center">
+          <div class="text-2xl font-black font-display text-slate-400" id="dstat-inactive">—</div>
+          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Inactive</div>
+        </div>
+      </div>
+
+      <!-- Driver cards grid -->
+      <div id="driver-cards" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div class="col-span-3 text-center text-slate-400 py-16 text-sm">Loading driver status...</div>
+      </div>
     </div>
+
   </div>
 
   <!-- BED UPDATE MODAL -->
@@ -125,16 +178,47 @@
     </div>
   </div>
 
-  <script src="/static/js/api.js"></script>
-  <script src="/static/js/auth.js"></script>
+  <style>
+    .htab-btn { color: #64748b; }
+    .active-htab { color: #7c3aed; background-color: #f5f3ff; }
+  </style>
+
+  <script src="/static/js/api.js?v=2"></script>
+  <script src="/static/js/auth.js?v=2"></script>
   <script>
     let hospitalId = null;
+    let _hospitalRefreshTimer = null;
+    let _driverRefreshTimer = null;
 
     document.addEventListener('DOMContentLoaded', async () => {
-      if (!requireAuth()) return;
+      const user = requireAuth();
+      if (!user) return;
+
+      // Guard: only hospital_admin (and system_admin) may access this page
+      if (user.role !== 'hospital_admin' && user.role !== 'system_admin') {
+        window.location.href = user.role === 'driver' ? '/driver'
+          : user.role === 'doctor' ? '/consultation'
+          : '/dashboard';
+        return;
+      }
+
       await loadDashboard();
-      setInterval(loadDashboard, 30000);
+      _hospitalRefreshTimer = setInterval(loadDashboard, 30000);
     });
+
+    function showHospitalTab(tab) {
+      ['overview', 'drivers'].forEach(t => {
+        document.getElementById(`hpanel-${t}`).classList.toggle('hidden', t !== tab);
+        document.getElementById(`htab-${t}`).classList.toggle('active-htab', t === tab);
+      });
+      if (tab === 'drivers') {
+        loadDriverStatus();
+        if (_driverRefreshTimer) clearInterval(_driverRefreshTimer);
+        _driverRefreshTimer = setInterval(loadDriverStatus, 15000);
+      } else {
+        if (_driverRefreshTimer) { clearInterval(_driverRefreshTimer); _driverRefreshTimer = null; }
+      }
+    }
 
     async function loadDashboard() {
       try {
@@ -156,7 +240,124 @@
         }
         renderEmergencies(data.active_emergencies || []);
       } catch (e) {
+        const status = parseInt(e.message);
+        if (status === 403) {
+          if (_hospitalRefreshTimer) { clearInterval(_hospitalRefreshTimer); _hospitalRefreshTimer = null; }
+          window.location.href = '/dashboard';
+          return;
+        }
         console.error('Dashboard error:', e);
+      }
+    }
+
+    async function loadDriverStatus() {
+      try {
+        const drivers = await apiGet('/hospital/drivers');
+        const total = drivers.length;
+        const available = drivers.filter(d => d.is_available && d.is_active).length;
+        const onDuty = drivers.filter(d => d.active_emergency_id).length;
+        const inactive = drivers.filter(d => !d.is_active).length;
+
+        document.getElementById('dstat-total').textContent = total;
+        document.getElementById('dstat-available').textContent = available;
+        document.getElementById('dstat-onduty').textContent = onDuty;
+        document.getElementById('dstat-inactive').textContent = inactive;
+
+        if (!total) {
+          document.getElementById('driver-cards').innerHTML = `
+            <div class="col-span-3 text-center py-16">
+              <div class="text-4xl mb-3">🚑</div>
+              <p class="text-slate-400 font-light text-sm">No drivers assigned to this hospital's ambulances</p>
+            </div>`;
+          return;
+        }
+
+        document.getElementById('driver-cards').innerHTML = drivers.map(d => {
+          const statusColor = d.active_emergency_id
+            ? 'bg-red-50 border-red-200 text-red-700'
+            : d.is_available && d.is_active
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+            : !d.is_active
+            ? 'bg-slate-100 border-slate-200 text-slate-500'
+            : 'bg-amber-50 border-amber-200 text-amber-700';
+
+          const statusLabel = d.active_emergency_id
+            ? '🔴 On Emergency'
+            : d.is_available && d.is_active
+            ? '🟢 Available'
+            : !d.is_active
+            ? '⚫ Inactive'
+            : '🟡 Off Duty';
+
+          const ambulanceStatusColor = {
+            available: 'bg-emerald-100 text-emerald-700',
+            en_route: 'bg-blue-100 text-blue-700',
+            at_scene: 'bg-amber-100 text-amber-700',
+            transporting: 'bg-red-100 text-red-700',
+            maintenance: 'bg-slate-100 text-slate-600',
+            offline: 'bg-slate-100 text-slate-400',
+          }[d.ambulance_status] || 'bg-slate-100 text-slate-500';
+
+          const stars = '★'.repeat(Math.round(d.performance_rating)) + '☆'.repeat(5 - Math.round(d.performance_rating));
+
+          return `
+            <div class="bg-white rounded-3xl border border-slate-100 p-5 shadow-sm card-hover">
+              <div class="flex items-start justify-between mb-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center text-white font-black font-display text-base shadow-md">
+                    ${d.driver_name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p class="font-bold text-slate-800 text-sm leading-tight">${d.driver_name}</p>
+                    <p class="text-[10px] text-slate-400 font-mono mt-0.5">${d.phone}</p>
+                  </div>
+                </div>
+                <span class="px-2.5 py-1 rounded-xl border text-[10px] font-bold uppercase tracking-wider ${statusColor}">${statusLabel}</span>
+              </div>
+
+              <div class="space-y-2 text-[11px] font-semibold text-slate-500">
+                <div class="flex justify-between items-center">
+                  <span>Ambulance</span>
+                  <span class="font-mono font-bold text-slate-700">${d.ambulance_number || '—'}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span>Vehicle Status</span>
+                  ${d.ambulance_status ? `<span class="px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase ${ambulanceStatusColor}">${d.ambulance_status.replace('_',' ')}</span>` : '<span class="text-slate-300">—</span>'}
+                </div>
+                <div class="flex justify-between items-center">
+                  <span>Type</span>
+                  <span class="capitalize font-semibold text-slate-600">${d.ambulance_type || '—'}</span>
+                </div>
+                ${d.active_emergency_id ? `
+                <div class="flex justify-between items-center bg-red-50 border border-red-100 rounded-xl px-2.5 py-1.5 mt-1">
+                  <span class="text-red-600">Active Emergency</span>
+                  <span class="font-bold text-red-700 capitalize">#${d.active_emergency_id} · ${(d.active_emergency_type||'').replace('_',' ')}</span>
+                </div>` : ''}
+              </div>
+
+              <div class="mt-4 pt-3 border-t border-slate-50 flex items-center justify-between">
+                <div>
+                  <p class="text-[10px] text-slate-400 mb-0.5">Performance</p>
+                  <p class="text-amber-500 text-sm font-bold" title="${d.performance_rating}/5">${stars}</p>
+                </div>
+                <div class="text-right">
+                  <p class="text-[10px] text-slate-400 mb-0.5">Total Trips</p>
+                  <p class="font-black font-display text-slate-800 text-base">${d.total_trips}</p>
+                </div>
+                <div class="text-right">
+                  <p class="text-[10px] text-slate-400 mb-0.5">Experience</p>
+                  <p class="font-bold text-slate-700 text-xs">${d.experience_years} yrs</p>
+                </div>
+              </div>
+
+              ${d.last_location_update ? `
+              <div class="mt-2 text-[10px] text-slate-300 font-light">
+                Last seen: ${new Date(d.last_location_update).toLocaleString()}
+              </div>` : ''}
+            </div>`;
+        }).join('');
+      } catch (e) {
+        document.getElementById('driver-cards').innerHTML = `<div class="col-span-3 text-center text-red-400 py-12">Error loading driver status: ${e.message}</div>`;
       }
     }
 

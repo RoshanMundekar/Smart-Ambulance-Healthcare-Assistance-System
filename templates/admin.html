@@ -22,6 +22,9 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     #admin-live-map { height: 500px; width: 100%; border-radius: 1.25rem; z-index: 0; }
+    .tab-btn { color: #64748b; }
+    .active-tab { color: #dc2626; background-color: #fef2f2; }
+    .modal-overlay { background: rgba(0,0,0,0.45); backdrop-filter: blur(6px); }
   </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -38,13 +41,15 @@
   </nav>
 
   <!-- TAB NAV -->
-  <div class="bg-white border-b border-slate-150 sticky top-[73px] z-45 shadow-sm">
-    <div class="max-w-7xl mx-auto px-6 py-1 flex gap-2 overflow-x-auto">
-      <button onclick="showTab('analytics')" id="tab-analytics" class="tab-btn active-tab px-4 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all">📊 Analytics</button>
-      <button onclick="showTab('livemap')" id="tab-livemap" class="tab-btn px-4 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all">🗺️ Live Map</button>
-      <button onclick="showTab('emergencies')" id="tab-emergencies" class="tab-btn px-4 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all">🆘 Emergencies</button>
-      <button onclick="showTab('ambulances')" id="tab-ambulances" class="tab-btn px-4 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all">🚑 Fleet Manager</button>
-      <button onclick="showTab('users')" id="tab-users" class="tab-btn px-4 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all">👥 User Accounts</button>
+  <div class="bg-white border-b border-slate-150 sticky top-[73px] z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-6 py-1 flex gap-1 overflow-x-auto">
+      <button onclick="showTab('analytics')" id="tab-analytics" class="tab-btn active-tab px-4 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all whitespace-nowrap">📊 Analytics</button>
+      <button onclick="showTab('livemap')" id="tab-livemap" class="tab-btn px-4 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all whitespace-nowrap">🗺️ Live Map</button>
+      <button onclick="showTab('emergencies')" id="tab-emergencies" class="tab-btn px-4 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all whitespace-nowrap">🆘 Emergencies</button>
+      <button onclick="showTab('ambulances')" id="tab-ambulances" class="tab-btn px-4 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all whitespace-nowrap">🚑 Fleet & Drivers</button>
+      <button onclick="showTab('hospitals')" id="tab-hospitals" class="tab-btn px-4 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all whitespace-nowrap">🏥 Hospitals & Doctors</button>
+      <button onclick="showTab('patients')" id="tab-patients" class="tab-btn px-4 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all whitespace-nowrap">🧑‍🤝‍🧑 Patients</button>
+      <button onclick="showTab('users')" id="tab-users" class="tab-btn px-4 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all whitespace-nowrap">👥 All Users</button>
     </div>
   </div>
 
@@ -69,7 +74,7 @@
           <button onclick="refreshAdminMap()" class="text-red-600 text-sm font-semibold hover:underline flex items-center gap-1">🔄 Refresh</button>
         </div>
         <div id="admin-live-map"></div>
-        <p class="text-xs text-slate-400 mt-3 font-light">Coordinates map refreshes dynamically. Markers display status signals from active mobile units.</p>
+        <p class="text-xs text-slate-400 mt-3 font-light">Markers show ambulance + assigned driver status in real-time.</p>
       </div>
     </div>
 
@@ -81,63 +86,559 @@
       </div>
     </div>
 
-    <!-- AMBULANCES TAB -->
+    <!-- FLEET & DRIVERS TAB -->
     <div id="panel-ambulances" class="hidden">
-      <h2 class="text-lg font-bold text-slate-800 mb-5 font-display">Active Response Fleet</h2>
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800 font-display">🚑 Fleet & Driver Management</h2>
+          <p class="text-xs text-slate-400 mt-1">Ambulances with real-time driver status and availability</p>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="openAddDriverModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-md shadow-blue-500/20">
+            ➕ Add Driver
+          </button>
+          <button onclick="loadAmbulances()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all">
+            🔄 Refresh
+          </button>
+        </div>
+      </div>
+
+      <!-- Fleet Summary Stats -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm text-center"><div class="text-2xl font-black font-display text-slate-800" id="fleet-total">—</div><div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Total Units</div></div>
+        <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm text-center"><div class="text-2xl font-black font-display text-emerald-600" id="fleet-available">—</div><div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Available</div></div>
+        <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm text-center"><div class="text-2xl font-black font-display text-blue-600" id="fleet-active">—</div><div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">On Dispatch</div></div>
+        <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm text-center"><div class="text-2xl font-black font-display text-amber-600" id="fleet-drivers">—</div><div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Drivers Assigned</div></div>
+      </div>
+
       <div id="amb-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <div class="text-center text-slate-450 py-12 col-span-3">Loading fleet...</div>
       </div>
     </div>
 
-    <!-- USERS TAB -->
+    <!-- HOSPITALS & DOCTORS TAB -->
+    <div id="panel-hospitals" class="hidden">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800 font-display">🏥 Hospitals & Doctor Directory</h2>
+          <p class="text-xs text-slate-400 mt-1">Manage hospital facilities and their medical staff</p>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="openAddHospitalModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-md shadow-blue-500/20">
+            ➕ Add Hospital
+          </button>
+          <button onclick="openAddDoctorModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-md shadow-emerald-500/20">
+            ➕ Add Doctor
+          </button>
+          <button onclick="loadHospitals()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all">
+            🔄 Refresh
+          </button>
+        </div>
+      </div>
+
+      <!-- Hospital filter -->
+      <div class="mb-5 flex gap-3 items-center">
+        <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Filter by Hospital:</label>
+        <select id="hospital-filter" onchange="loadDoctors()" class="border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
+          <option value="">All Hospitals</option>
+        </select>
+      </div>
+
+      <div class="grid lg:grid-cols-5 gap-6">
+        <!-- Hospital list -->
+        <div class="lg:col-span-2">
+          <h3 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">🏥 Facilities <span id="hospital-count" class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg text-[10px] font-bold"></span></h3>
+          <div id="hospital-list" class="space-y-3 max-h-[600px] overflow-y-auto pr-1">
+            <div class="text-center text-slate-400 py-8 text-sm">Loading hospitals...</div>
+          </div>
+        </div>
+        <!-- Doctor list -->
+        <div class="lg:col-span-3">
+          <h3 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">👨‍⚕️ Doctors <span id="doctor-count" class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg text-[10px] font-bold"></span></h3>
+          <div id="doctor-list" class="space-y-3 max-h-[600px] overflow-y-auto pr-1">
+            <div class="text-center text-slate-400 py-8 text-sm">Loading doctors...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PATIENTS TAB -->
+    <div id="panel-patients" class="hidden">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800 font-display">🧑‍🤝‍🧑 Patient Registry</h2>
+          <p class="text-xs text-slate-400 mt-1">Manage all registered patients in the system</p>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="openAddPatientModal()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-md shadow-purple-500/20">
+            ➕ Add Patient
+          </button>
+          <button onclick="loadPatients()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all">
+            🔄 Refresh
+          </button>
+        </div>
+      </div>
+      <div id="patients-table" class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+        <div class="text-center text-slate-450 py-12">Loading patients...</div>
+      </div>
+    </div>
+
+    <!-- ALL USERS TAB -->
     <div id="panel-users" class="hidden">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
-        <h2 class="text-lg font-bold text-slate-800 font-display">User Accounts & Directory</h2>
-        <select id="user-role-filter" onchange="loadUsers()" class="border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold uppercase tracking-wider bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20">
-          <option value="">All Accounts</option>
-          <option value="patient">Patients</option>
-          <option value="driver">Drivers</option>
-          <option value="doctor">Doctors</option>
-          <option value="hospital_admin">Hospital Admins</option>
-        </select>
+        <div>
+          <h2 class="text-lg font-bold text-slate-800 font-display">User Accounts & Directory</h2>
+          <p class="text-xs text-slate-400 mt-1">Manage and create general system user accounts</p>
+        </div>
+        <div class="flex gap-2 items-center">
+          <button onclick="openAddUserModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-md shadow-indigo-500/20">
+            ➕ Add User
+          </button>
+          <select id="user-role-filter" onchange="loadUsers()" class="border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold uppercase tracking-wider bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+            <option value="">All Accounts</option>
+            <option value="patient">Patients</option>
+            <option value="driver">Drivers</option>
+            <option value="doctor">Doctors</option>
+            <option value="hospital_admin">Hospital Admins</option>
+          </select>
+        </div>
       </div>
       <div id="users-table" class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
         <div class="text-center text-slate-450 py-12">Loading accounts...</div>
       </div>
     </div>
+
+  </div><!-- end main container -->
+
+  <!-- ========== MODALS ========== -->
+
+  <!-- Add Patient Modal -->
+  <div id="modal-add-patient" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-3xl border border-slate-100 p-6 w-full max-w-md shadow-2xl animate-slide-in max-h-[90vh] overflow-y-auto">
+      <h3 class="font-bold text-slate-800 mb-2 font-display text-lg">🧑‍🤝‍🧑 Register New Patient</h3>
+
+      <!-- Login credentials notice -->
+      <div class="mb-4 bg-purple-50 border border-purple-200 rounded-2xl px-4 py-3 flex gap-3 items-start">
+        <span class="text-purple-500 text-lg mt-0.5">🔑</span>
+        <div>
+          <p class="text-xs font-bold text-purple-800">Creates Login Account</p>
+          <p class="text-[11px] text-purple-600 mt-0.5">The <strong>email</strong> and <strong>password</strong> you set here are what the patient uses to log in at <code class="bg-purple-100 px-1 rounded">/login</code>.</p>
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Full Name *</label>
+            <input type="text" id="np-name" placeholder="John Doe" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400"/>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Age</label>
+            <input type="number" id="np-age" placeholder="30" min="1" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20"/>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Email *</label>
+            <input type="email" id="np-email" placeholder="patient@email.com" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20"/>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Phone *</label>
+            <input type="text" id="np-phone" placeholder="+91-9999999999" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20"/>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Password *</label>
+            <input type="password" id="np-password" placeholder="Min 8 chars" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20"/>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Blood Group</label>
+            <select id="np-blood" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20">
+              <option value="">Select</option>
+              <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+              <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Medical History</label>
+          <textarea id="np-history" rows="2" placeholder="e.g. Hypertension diagnosed 2020" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20"></textarea>
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Chronic Conditions</label>
+          <input type="text" id="np-chronic" placeholder="e.g. Diabetes, Hypertension" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20"/>
+        </div>
+        <div id="np-error" class="hidden text-red-600 text-xs font-semibold bg-red-50 border border-red-100 px-3 py-2 rounded-xl"></div>
+        <div class="flex gap-3 pt-2">
+          <button onclick="submitAddPatient()" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md shadow-purple-500/10">Add Patient</button>
+          <button onclick="closeModal('modal-add-patient')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition-all">Cancel</button>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <style>
-    .tab-btn { color: #64748b; }
-    .active-tab { color: #dc2626; background-color: #fef2f2; }
-  </style>
+  <!-- Add Driver Modal -->
+  <div id="modal-add-driver" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-3xl border border-slate-100 p-6 w-full max-w-lg shadow-2xl animate-slide-in max-h-[90vh] overflow-y-auto">
+      <h3 class="font-bold text-slate-800 mb-2 font-display text-lg">🚑 Register New Driver</h3>
 
-  <script src="/static/js/api.js"></script>
-  <script src="/static/js/auth.js"></script>
+      <!-- Login credentials notice -->
+      <div class="mb-4 bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3 flex gap-3 items-start">
+        <span class="text-blue-500 text-lg mt-0.5">🔑</span>
+        <div>
+          <p class="text-xs font-bold text-blue-800">Creates Login Account + Driver Profile</p>
+          <p class="text-[11px] text-blue-600 mt-0.5">The <strong>email</strong> and <strong>password</strong> you set here are the driver's login credentials. They can immediately sign in at <code class="bg-blue-100 px-1 rounded">/login</code> after being added.</p>
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        <!-- Account credentials section -->
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-1">👤 Account Credentials (for Login)</p>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Full Name *</label>
+            <input type="text" id="nd-name" placeholder="Ravi Singh" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"/>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Email (Login ID) *</label>
+            <input type="email" id="nd-email" placeholder="ravi@ambulance.com" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"/>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Password *</label>
+            <input type="password" id="nd-password" placeholder="Min 8 chars" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"/>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Phone *</label>
+            <input type="text" id="nd-phone" placeholder="+91-9876543210" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"/>
+          </div>
+        </div>
+
+        <!-- Driver profile section -->
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-1 pt-1">🪪 Driver Profile</p>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">License Number *</label>
+            <input type="text" id="nd-license" placeholder="MH-DL-XXXXXX" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"/>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Experience (yrs)</label>
+            <input type="number" id="nd-exp" value="0" min="0" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"/>
+          </div>
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Assign Ambulance ID (optional)</label>
+          <input type="number" id="nd-ambulance" placeholder="Leave blank if not yet assigned" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"/>
+        </div>
+        <div id="nd-error" class="hidden text-red-600 text-xs font-semibold bg-red-50 border border-red-100 px-3 py-2 rounded-xl"></div>
+        <div class="flex gap-3 pt-2">
+          <button onclick="submitAddDriver()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md shadow-blue-500/10">🚑 Create Driver Account</button>
+          <button onclick="closeModal('modal-add-driver')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition-all">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Doctor Modal -->
+  <div id="modal-add-doctor" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-3xl border border-slate-100 p-6 w-full max-w-md shadow-2xl animate-slide-in max-h-[90vh] overflow-y-auto">
+      <h3 class="font-bold text-slate-800 mb-5 font-display text-lg">➕ Add Doctor to Hospital</h3>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Hospital *</label>
+          <select id="ndoc-hospital" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
+            <option value="">Select Hospital</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Doctor Name *</label>
+            <input type="text" id="ndoc-name" placeholder="Dr. Sharma" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20"/>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Specialization *</label>
+            <input type="text" id="ndoc-spec" placeholder="Cardiologist" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20"/>
+          </div>
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Qualification</label>
+          <input type="text" id="ndoc-qual" placeholder="MBBS, MD (Cardiology)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20"/>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Experience (yrs)</label>
+            <input type="number" id="ndoc-exp" value="0" min="0" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20"/>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Consultation Fee (₹)</label>
+            <input type="number" id="ndoc-fee" value="0" min="0" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20"/>
+          </div>
+        </div>
+        <div id="ndoc-error" class="hidden text-red-600 text-xs font-semibold bg-red-50 border border-red-100 px-3 py-2 rounded-xl"></div>
+        <div class="flex gap-3 pt-2">
+          <button onclick="submitAddDoctor()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md shadow-emerald-500/10">Add Doctor</button>
+          <button onclick="closeModal('modal-add-doctor')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition-all">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Hospital Modal -->
+  <div id="modal-add-hospital" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-3xl border border-slate-100 p-6 w-full max-w-2xl shadow-2xl animate-slide-in max-h-[90vh] overflow-y-auto">
+      <h3 class="font-bold text-slate-800 mb-2 font-display text-lg">🏥 Register New Hospital Facility & Admin</h3>
+
+      <!-- Login credentials notice -->
+      <div class="mb-4 bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3 flex gap-3 items-start">
+        <span class="text-blue-500 text-lg mt-0.5">🔑</span>
+        <div>
+          <p class="text-xs font-bold text-blue-800">Atomic Creation</p>
+          <p class="text-[11px] text-blue-600 mt-0.5">This creates both the <strong>Hospital Profile</strong> and the <strong>Hospital Admin Account</strong> in the users table so they can log in immediately.</p>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <!-- Section: Hospital Details -->
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-1">🏥 Hospital Details</p>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Hospital Name *</label>
+            <input type="text" id="nh-name" placeholder="City General Hospital" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"/>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Email *</label>
+            <input type="email" id="nh-email" placeholder="info@hospital.com" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"/>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Phone *</label>
+            <input type="text" id="nh-phone" placeholder="+91-22-XXXXXXXX" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"/>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Specializations (Comma separated) *</label>
+            <input type="text" id="nh-spec" placeholder="cardiology, neurology, emergency" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"/>
+          </div>
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Address *</label>
+          <input type="text" id="nh-address" placeholder="123 Health Ave" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"/>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">City *</label>
+            <input type="text" id="nh-city" placeholder="Mumbai" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"/>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">State *</label>
+            <input type="text" id="nh-state" placeholder="Maharashtra" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"/>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Zip Code</label>
+            <input type="text" id="nh-zip" placeholder="400001" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"/>
+          </div>
+        </div>
+        <div class="grid grid-cols-4 gap-3">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Latitude *</label>
+            <input type="number" step="any" id="nh-lat" placeholder="19.076" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"/>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Longitude *</label>
+            <input type="number" step="any" id="nh-lon" placeholder="72.877" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"/>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Available Beds</label>
+            <input type="number" id="nh-beds" value="10" min="0" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"/>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">ICU Beds</label>
+            <input type="number" id="nh-icu" value="2" min="0" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"/>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="checkbox" id="nh-emergency" checked class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"/>
+          <label for="nh-emergency" class="text-xs font-bold text-slate-600 uppercase tracking-wider">Supports Emergency Ambulance Dispatches</label>
+        </div>
+
+        <!-- Section: Hospital Admin Details -->
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-1 pt-2">👤 Hospital Admin User Credentials</p>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Admin Full Name *</label>
+            <input type="text" id="nh-admin-name" placeholder="John Admin" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"/>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Admin Email (Login ID) *</label>
+            <input type="email" id="nh-admin-email" placeholder="admin@hospital.com" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"/>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Admin Password *</label>
+            <input type="password" id="nh-admin-password" placeholder="Min 8 chars" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"/>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Admin Phone *</label>
+            <input type="text" id="nh-admin-phone" placeholder="+91-9999999999" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"/>
+          </div>
+        </div>
+
+        <div id="nh-error" class="hidden text-red-600 text-xs font-semibold bg-red-50 border border-red-100 px-3 py-2 rounded-xl"></div>
+        <div class="flex gap-3 pt-2">
+          <button onclick="submitAddHospital()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md shadow-blue-500/10">🏥 Create Facility & Account</button>
+          <button onclick="closeModal('modal-add-hospital')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition-all">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add User Modal -->
+  <div id="modal-add-user" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-3xl border border-slate-100 p-6 w-full max-w-md shadow-2xl animate-slide-in max-h-[90vh] overflow-y-auto">
+      <h3 class="font-bold text-slate-800 mb-5 font-display text-lg">👥 Register New User Account</h3>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Full Name *</label>
+          <input type="text" id="nu-name" placeholder="Aakash Verma" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"/>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Email *</label>
+            <input type="email" id="nu-email" placeholder="aakash@email.com" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"/>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Phone *</label>
+            <input type="text" id="nu-phone" placeholder="+91-9876543210" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"/>
+          </div>
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Password *</label>
+          <input type="password" id="nu-password" placeholder="Min 8 chars" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"/>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Role *</label>
+            <select id="nu-role" onchange="toggleUserHospitalDropdown()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+              <option value="patient">Patient</option>
+              <option value="driver">Driver</option>
+              <option value="doctor">Doctor</option>
+              <option value="hospital_admin">Hospital Admin</option>
+              <option value="system_admin">System Admin</option>
+            </select>
+          </div>
+          <div id="nu-hospital-div" class="hidden">
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Assign Hospital *</label>
+            <select id="nu-hospital" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+        </div>
+
+        <div id="nu-error" class="hidden text-red-600 text-xs font-semibold bg-red-50 border border-red-100 px-3 py-2 rounded-xl"></div>
+        <div class="flex gap-3 pt-2">
+          <button onclick="submitAddUser()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md shadow-indigo-500/10">Add User</button>
+          <button onclick="closeModal('modal-add-user')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition-all">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Remove Modal -->
+  <div id="modal-confirm" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-3xl border border-slate-100 p-6 w-full max-w-sm shadow-2xl animate-slide-in">
+      <div class="text-center mb-5">
+        <div class="text-4xl mb-3" id="confirm-icon">⚠️</div>
+        <h3 class="font-bold text-slate-800 font-display text-lg" id="confirm-title">Confirm Action</h3>
+        <p class="text-sm text-slate-500 mt-1" id="confirm-msg">Are you sure?</p>
+      </div>
+      <div class="flex gap-3">
+        <button id="confirm-ok-btn" onclick="confirmAction()" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition-all">Confirm</button>
+        <button onclick="closeModal('modal-confirm')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl text-xs uppercase tracking-wider">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="hidden fixed bottom-6 right-6 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl text-sm font-semibold z-[60] flex items-center gap-2 animate-slide-in">
+    <span id="toast-icon">✅</span>
+    <span id="toast-msg"></span>
+  </div>
+
+  <script src="/static/js/api.js?v=2"></script>
+  <script src="/static/js/auth.js?v=2"></script>
   <script>
+    const ALL_TABS = ['analytics','livemap','emergencies','ambulances','hospitals','patients','users'];
+    let _confirmCallback = null;
+    let adminMap = null, adminMarkers = {}, adminMapTimer = null;
+    let _hospitalData = [];
+    let _currentUserId = null;  // logged-in admin's user ID
+
+    // ─── Init ───────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', async () => {
-      if (!requireAuth()) return;
+      const user = requireAuth();
+      if (!user) return;
+      if (user.role !== 'system_admin') {
+        alert('Access denied: System Admin role required.');
+        window.location.href = user.role === 'driver' ? '/driver'
+          : user.role === 'hospital_admin' ? '/hospital'
+          : user.role === 'doctor' ? '/consultation'
+          : '/dashboard';
+        return;
+      }
       loadAnalytics();
+      _currentUserId = user.id;  // remember own ID for delete guards
     });
 
+    // ─── Tab switching ───────────────────────────────────────────
     function showTab(tab) {
-      ['analytics', 'livemap', 'emergencies', 'ambulances', 'users'].forEach(t => {
+      ALL_TABS.forEach(t => {
         document.getElementById(`panel-${t}`).classList.toggle('hidden', t !== tab);
         document.getElementById(`tab-${t}`).classList.toggle('active-tab', t === tab);
       });
       if (tab === 'livemap') initAdminMap();
       if (tab === 'emergencies') loadEmergencies();
       if (tab === 'ambulances') loadAmbulances();
+      if (tab === 'hospitals') loadHospitals();
+      if (tab === 'patients') loadPatients();
       if (tab === 'users') loadUsers();
     }
 
+    // ─── Utilities ───────────────────────────────────────────────
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+    function toast(msg, icon = '✅') {
+      const el = document.getElementById('toast');
+      document.getElementById('toast-msg').textContent = msg;
+      document.getElementById('toast-icon').textContent = icon;
+      el.classList.remove('hidden');
+      setTimeout(() => el.classList.add('hidden'), 3500);
+    }
+
+    function showConfirm(title, msg, icon, callback) {
+      document.getElementById('confirm-title').textContent = title;
+      document.getElementById('confirm-msg').textContent = msg;
+      document.getElementById('confirm-icon').textContent = icon;
+      _confirmCallback = callback;
+      openModal('modal-confirm');
+    }
+    function confirmAction() {
+      closeModal('modal-confirm');
+      if (_confirmCallback) _confirmCallback();
+      _confirmCallback = null;
+    }
+
+    // ─── Analytics ───────────────────────────────────────────────
     async function loadAnalytics() {
       try {
         const data = await apiGet('/admin/analytics');
         document.getElementById('analytics-content').innerHTML = `
           <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm text-center">
             <div class="text-3xl font-black font-display text-blue-600">${data.users.total}</div>
-            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mt-2">Total Registers</div>
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mt-2">Total Registered</div>
           </div>
           <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm text-center">
             <div class="text-3xl font-black font-display text-red-600">${data.emergencies.total}</div>
@@ -149,7 +650,7 @@
           </div>
           <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm text-center">
             <div class="text-3xl font-black font-display text-purple-600">${data.emergencies.avg_response_minutes} min</div>
-            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mt-2">Average Dispatch ETA</div>
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mt-2">Avg Dispatch ETA</div>
           </div>
         `;
         document.getElementById('analytics-detail').innerHTML = `
@@ -181,6 +682,7 @@
       }
     }
 
+    // ─── Emergencies ─────────────────────────────────────────────
     async function loadEmergencies() {
       try {
         const data = await apiGet('/admin/emergency/active');
@@ -189,97 +691,521 @@
         el.innerHTML = `
           <table class="w-full text-sm">
             <thead><tr class="text-left bg-slate-50 border-b border-slate-100 text-slate-400 uppercase text-[10px] tracking-wider font-bold">
-              <th class="px-6 py-4">ID</th>
-              <th class="px-6 py-4">Type</th>
-              <th class="px-6 py-4">Severity</th>
-              <th class="px-6 py-4">Status</th>
-              <th class="px-6 py-4">ETA</th>
-              <th class="px-6 py-4">Created Time</th>
+              <th class="px-6 py-4">ID</th><th class="px-6 py-4">Type</th><th class="px-6 py-4">Severity</th>
+              <th class="px-6 py-4">Status</th><th class="px-6 py-4">ETA</th><th class="px-6 py-4">Created</th>
             </tr></thead>
             <tbody class="divide-y divide-slate-50">
               ${data.map(e => `<tr class="hover:bg-slate-50/50 transition-colors text-xs text-slate-700">
                 <td class="px-6 py-4 font-bold text-slate-900">#${e.id}</td>
                 <td class="px-6 py-4 capitalize font-medium">${e.emergency_type}</td>
                 <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${e.severity === 'critical' ? 'bg-red-50 text-red-700 border border-red-100/50' : 'bg-amber-50 text-amber-700 border border-amber-100/50'}">${e.severity.toUpperCase()}</span></td>
-                <td class="px-6 py-4 capitalize font-semibold text-slate-600">${e.status.replace('_',' ')}</td>
+                <td class="px-6 py-4 capitalize font-semibold text-slate-600">${e.status.replace(/_/g,' ')}</td>
                 <td class="px-6 py-4 font-mono font-bold">${e.eta_minutes ? e.eta_minutes + ' min' : '—'}</td>
                 <td class="px-6 py-4 text-slate-400 font-light">${new Date(e.created_at).toLocaleString()}</td>
               </tr>`).join('')}
             </tbody>
           </table>`;
       } catch (e) {
-        document.getElementById('em-table').innerHTML = `<div class="text-center text-red-400 py-12">Error loading incidents: ${e.message}</div>`;
+        document.getElementById('em-table').innerHTML = `<div class="text-center text-red-400 py-12">Error: ${e.message}</div>`;
       }
     }
+
+    // ─── Fleet & Drivers ─────────────────────────────────────────
+    const statusColors = { available:'bg-emerald-50 text-emerald-700 border-emerald-100', en_route:'bg-blue-50 text-blue-700 border-blue-100', at_scene:'bg-amber-50 text-amber-700 border-amber-100', transporting:'bg-red-50 text-red-700 border-red-100', maintenance:'bg-slate-100 text-slate-700 border-slate-200', offline:'bg-slate-100 text-slate-400 border-slate-200' };
 
     async function loadAmbulances() {
       try {
         const data = await apiGet('/admin/ambulances');
-        const statusColors = { available: 'bg-emerald-50 text-emerald-700 border-emerald-100', en_route: 'bg-blue-50 text-blue-700 border-blue-100', at_scene: 'bg-amber-50 text-amber-700 border-amber-100', transporting: 'bg-red-50 text-red-700 border-red-100', maintenance: 'bg-slate-100 text-slate-700 border-slate-200', offline: 'bg-slate-100 text-slate-400 border-slate-200' };
+        const total = data.length;
+        const available = data.filter(a => a.status === 'available').length;
+        const active = data.filter(a => !['available','offline','maintenance'].includes(a.status)).length;
+        const withDrivers = data.filter(a => a.driver_id).length;
+        document.getElementById('fleet-total').textContent = total;
+        document.getElementById('fleet-available').textContent = available;
+        document.getElementById('fleet-active').textContent = active;
+        document.getElementById('fleet-drivers').textContent = withDrivers;
+
         document.getElementById('amb-grid').innerHTML = data.map(a => `
-          <div class="bg-white rounded-3xl border border-slate-100 p-5 shadow-sm card-hover flex flex-col justify-between">
-            <div>
-              <div class="flex justify-between items-start mb-4">
-                <div>
-                  <p class="font-bold text-slate-800 tracking-tight font-display text-base">${a.number}</p>
-                  <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-0.5">${a.type}</p>
-                </div>
-                <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${statusColors[a.status] || 'bg-slate-50 border-slate-100'}">${a.status.replace('_', ' ')}</span>
+          <div class="bg-white rounded-3xl border border-slate-100 p-5 shadow-sm card-hover flex flex-col gap-4">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="font-bold text-slate-800 tracking-tight font-display text-base">${a.number}</p>
+                <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-0.5">${a.type}</p>
               </div>
-              <div class="text-[11px] space-y-1 font-semibold text-slate-450 pt-3 border-t border-slate-50">
-                <p class="flex justify-between"><span>GPS Position</span><span class="font-mono text-slate-655">${a.lat.toFixed(5)}, ${a.lon.toFixed(5)}</span></p>
-                <p class="flex justify-between"><span>Status Signal</span><span class="${a.is_active ? 'text-emerald-600' : 'text-red-500'} font-bold">${a.is_active ? 'Online' : 'Offline'}</span></p>
-              </div>
+              <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${statusColors[a.status] || 'bg-slate-50 border-slate-100'}">${a.status.replace(/_/g,' ')}</span>
             </div>
-          </div>
-        `).join('');
+            <div class="text-[11px] space-y-1.5 font-semibold text-slate-450 pt-3 border-t border-slate-50">
+              <p class="flex justify-between"><span>GPS</span><span class="font-mono text-slate-655">${a.lat.toFixed(5)}, ${a.lon.toFixed(5)}</span></p>
+              <p class="flex justify-between"><span>Signal</span><span class="${a.is_active ? 'text-emerald-600' : 'text-red-500'} font-bold">${a.is_active ? 'Online' : 'Offline'}</span></p>
+            </div>
+            ${a.driver_id ? `
+            <div class="bg-slate-50 rounded-2xl p-3 text-[11px] space-y-1 border border-slate-100">
+              <p class="font-bold text-slate-700 text-xs flex items-center gap-1">🧑‍✈️ ${a.driver_name}</p>
+              <div class="flex justify-between text-slate-500">
+                <span>${a.driver_phone}</span>
+                <span class="${a.driver_available ? 'text-emerald-600 font-bold' : 'text-amber-600 font-bold'}">${a.driver_available ? 'Available' : 'Off Duty'}</span>
+              </div>
+              <div class="flex justify-between text-slate-400">
+                <span>Rating</span>
+                <span class="font-bold text-amber-500">${'★'.repeat(Math.round(a.driver_rating || 0))}${'☆'.repeat(5-Math.round(a.driver_rating || 0))}</span>
+              </div>
+            </div>` : `
+            <div class="bg-amber-50 border border-amber-100/60 rounded-2xl p-3 text-[11px] text-amber-700 font-semibold flex items-center gap-2">
+              ⚠️ No driver assigned
+            </div>`}
+            <div class="flex gap-2 pt-1">
+              <button onclick="showConfirm('Remove Driver?','This will deactivate the driver linked to ${a.number}.','🗑️',()=>removeAmbulanceDriver(${a.driver_id}))" ${!a.driver_id ? 'disabled' : ''} class="flex-1 bg-red-50 hover:bg-red-100 text-red-600 font-bold py-2 rounded-xl text-[10px] uppercase tracking-wider transition-all disabled:opacity-30 disabled:cursor-not-allowed">Remove Driver</button>
+            </div>
+          </div>`).join('');
       } catch (e) {
-        document.getElementById('amb-grid').innerHTML = `<div class="text-center text-red-400 py-12 col-span-3">Error loading fleet: ${e.message}</div>`;
+        document.getElementById('amb-grid').innerHTML = `<div class="text-center text-red-400 py-12 col-span-3">Error: ${e.message}</div>`;
       }
     }
 
+    async function removeAmbulanceDriver(driverId) {
+      if (!driverId) return;
+      try {
+        await apiPatch(`/admin/drivers/${driverId}/toggle-active`, {});
+        toast('Driver deactivated successfully');
+        loadAmbulances();
+      } catch (e) { toast('Failed: ' + e.message, '❌'); }
+    }
+
+    function openAddDriverModal() { openModal('modal-add-driver'); }
+
+    async function submitAddDriver() {
+      const name     = document.getElementById('nd-name').value.trim();
+      const email    = document.getElementById('nd-email').value.trim();
+      const password = document.getElementById('nd-password').value;
+      const phone    = document.getElementById('nd-phone').value.trim();
+      const license  = document.getElementById('nd-license').value.trim();
+      const exp      = parseInt(document.getElementById('nd-exp').value) || 0;
+      const ambId    = document.getElementById('nd-ambulance').value;
+      const errEl    = document.getElementById('nd-error');
+      errEl.classList.add('hidden');
+
+      if (!name || !email || !phone || !license || !password) {
+        errEl.textContent = 'Name, email, phone, password and license are all required.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      if (password.length < 8) {
+        errEl.textContent = 'Password must be at least 8 characters.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      try {
+        // Single call: creates user login account + driver profile atomically
+        let url = `/admin/drivers/create-with-account`;
+        url += `?full_name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&license_number=${encodeURIComponent(license)}&experience_years=${exp}`;
+        if (ambId) url += `&ambulance_id=${ambId}`;
+        const result = await apiPost(url, {});
+        closeModal('modal-add-driver');
+        // Clear form
+        ['nd-name','nd-email','nd-password','nd-phone','nd-license','nd-ambulance'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('nd-exp').value = '0';
+        toast(`Driver account created! ${result.driver_name} can now log in with ${result.email} 🚑`);
+        loadAmbulances();
+      } catch (e) {
+        errEl.textContent = e.message;
+        errEl.classList.remove('hidden');
+      }
+    }
+
+    // ─── Hospitals & Doctors ──────────────────────────────────────
+    async function loadHospitals() {
+      try {
+        const data = await apiGet('/admin/hospitals');
+        _hospitalData = data;
+        document.getElementById('hospital-count').textContent = data.length;
+
+        // Populate hospital filter
+        const filterSel = document.getElementById('hospital-filter');
+        filterSel.innerHTML = '<option value="">All Hospitals</option>' +
+          data.map(h => `<option value="${h.id}">${h.hospital_name}</option>`).join('');
+
+        // Populate add-doctor hospital selector
+        const docHospSel = document.getElementById('ndoc-hospital');
+        docHospSel.innerHTML = '<option value="">Select Hospital</option>' +
+          data.map(h => `<option value="${h.id}">${h.hospital_name}</option>`).join('');
+
+        document.getElementById('hospital-list').innerHTML = data.map(h => `
+          <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm card-hover">
+            <div class="flex items-start justify-between mb-2">
+              <div>
+                <p class="font-bold text-slate-800 text-sm">${h.hospital_name}</p>
+                <p class="text-[10px] text-slate-400 mt-0.5">${h.city || ''}</p>
+              </div>
+              <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase ${h.is_active ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-700 border border-red-100'}">${h.is_active ? 'Active' : 'Off'}</span>
+            </div>
+            <div class="text-[10px] text-slate-400 space-y-0.5 font-medium">
+              <p>📞 ${h.phone || '—'}</p>
+              <p>🛏️ ${h.available_beds} beds  •  ICU: ${h.icu_beds}</p>
+              <p>⭐ ${h.rating} rating</p>
+              ${h.emergency_supported ? '<p class="text-red-600 font-bold">🚨 Emergency Supported</p>' : ''}
+            </div>
+            <div class="flex gap-2 mt-3">
+              <button onclick="document.getElementById('hospital-filter').value='${h.id}';loadDoctors()" class="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-1.5 rounded-xl text-[10px] uppercase tracking-wider transition-all">View Doctors</button>
+              <button onclick="showConfirm('Remove Hospital?','This will deactivate ${h.hospital_name.replace(/'/g,"\\'")} and all its services.','🏥',()=>removeHospital(${h.id}))" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold py-1.5 px-3 rounded-xl text-[10px] uppercase tracking-wider transition-all">✕</button>
+            </div>
+          </div>`).join('');
+
+        loadDoctors();
+      } catch (e) {
+        document.getElementById('hospital-list').innerHTML = `<div class="text-red-400 text-sm py-8 text-center">Error: ${e.message}</div>`;
+      }
+    }
+
+    async function loadDoctors() {
+      const hospitalId = document.getElementById('hospital-filter').value;
+      try {
+        let url = '/admin/doctors';
+        if (hospitalId) url += `?hospital_id=${hospitalId}`;
+        const data = await apiGet(url);
+        document.getElementById('doctor-count').textContent = data.length;
+        if (!data.length) {
+          document.getElementById('doctor-list').innerHTML = '<div class="text-slate-400 text-sm py-8 text-center">No doctors found</div>';
+          return;
+        }
+        document.getElementById('doctor-list').innerHTML = data.map(d => `
+          <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm card-hover flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3 flex-1 min-w-0">
+              <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white font-black text-sm flex-shrink-0">
+                ${d.doctor_name.charAt(0)}
+              </div>
+              <div class="min-w-0">
+                <p class="font-bold text-slate-800 text-sm truncate">${d.doctor_name}</p>
+                <p class="text-[10px] text-teal-600 font-bold uppercase tracking-wider">${d.specialization}</p>
+                <p class="text-[10px] text-slate-400 truncate">${d.hospital_name} · ${d.experience_years} yrs · ₹${d.consultation_fee}</p>
+              </div>
+            </div>
+            <div class="flex flex-col items-end gap-2 flex-shrink-0">
+              <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase border ${d.is_active ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200'}">${d.is_active ? 'Active' : 'Inactive'}</span>
+              <button onclick="showConfirm('Remove Doctor?','This will deactivate Dr. ${d.doctor_name.replace(/'/g,"\\'")} from the system.','👨‍⚕️',()=>removeDoctor(${d.id}))" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold py-1 px-2.5 rounded-xl text-[10px] uppercase tracking-wider transition-all">Remove</button>
+            </div>
+          </div>`).join('');
+      } catch (e) {
+        document.getElementById('doctor-list').innerHTML = `<div class="text-red-400 text-sm py-8 text-center">Error: ${e.message}</div>`;
+      }
+    }
+
+    function openAddDoctorModal() { openModal('modal-add-doctor'); }
+
+    async function submitAddDoctor() {
+      const hospId = document.getElementById('ndoc-hospital').value;
+      const name = document.getElementById('ndoc-name').value.trim();
+      const spec = document.getElementById('ndoc-spec').value.trim();
+      const qual = document.getElementById('ndoc-qual').value.trim();
+      const exp = parseInt(document.getElementById('ndoc-exp').value) || 0;
+      const fee = parseFloat(document.getElementById('ndoc-fee').value) || 0;
+      const errEl = document.getElementById('ndoc-error');
+      errEl.classList.add('hidden');
+
+      if (!hospId || !name || !spec) {
+        errEl.textContent = 'Hospital, name and specialization are required.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      try {
+        let url = `/admin/doctors?hospital_id=${hospId}&doctor_name=${encodeURIComponent(name)}&specialization=${encodeURIComponent(spec)}&experience_years=${exp}&consultation_fee=${fee}`;
+        if (qual) url += `&qualification=${encodeURIComponent(qual)}`;
+        await apiPost(url, {});
+        closeModal('modal-add-doctor');
+        toast('Doctor added successfully! 👨‍⚕️');
+        loadHospitals();
+      } catch (e) {
+        errEl.textContent = e.message;
+        errEl.classList.remove('hidden');
+      }
+    }
+
+    async function removeDoctor(docId) {
+      try {
+        await apiDelete(`/admin/doctors/${docId}`);
+        toast('Doctor removed');
+        loadDoctors();
+      } catch(e) { toast('Failed: '+e.message,'❌'); }
+    }
+
+    async function removeHospital(hospId) {
+      try {
+        await apiDelete(`/admin/hospitals/${hospId}`);
+        toast('Hospital deactivated');
+        loadHospitals();
+      } catch(e) { toast('Failed: '+e.message,'❌'); }
+    }
+
+    // ─── Patients ────────────────────────────────────────────────
+    async function loadPatients() {
+      try {
+        const data = await apiGet('/admin/users?role=patient&limit=100');
+        const el = document.getElementById('patients-table');
+        if (!data.length) { el.innerHTML = '<div class="text-center py-12 text-slate-400">No patients registered</div>'; return; }
+        el.innerHTML = `
+          <table class="w-full text-sm">
+            <thead><tr class="text-left bg-slate-50 border-b border-slate-100 text-slate-400 uppercase text-[10px] tracking-wider font-bold">
+              <th class="px-5 py-4">Name</th><th class="px-5 py-4">Contact</th>
+              <th class="px-5 py-4">Blood</th><th class="px-5 py-4">Conditions</th>
+              <th class="px-5 py-4">Status</th><th class="px-5 py-4">Actions</th>
+            </tr></thead>
+            <tbody class="divide-y divide-slate-50">
+              ${data.map(u => `<tr class="hover:bg-slate-50/50 transition-colors text-xs text-slate-700">
+                <td class="px-5 py-4 font-bold text-slate-900 font-display">${u.full_name}</td>
+                <td class="px-5 py-4"><p>${u.email}</p><p class="text-slate-400 font-mono text-[10px]">${u.phone||'—'}</p></td>
+                <td class="px-5 py-4"><span class="font-bold text-red-600">${u.blood_group||'—'}</span></td>
+                <td class="px-5 py-4 text-slate-500 max-w-[120px] truncate">${u.chronic_conditions||'—'}</td>
+                <td class="px-5 py-4"><span class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${u.is_active ? 'bg-emerald-50 text-emerald-700 border-emerald-100/50' : 'bg-red-50 text-red-700 border-red-100/50'}">${u.is_active ? 'Active' : 'Inactive'}</span></td>
+                <td class="px-5 py-4">
+                  <div class="flex gap-1.5">
+                    <button onclick="toggleUserActive(${u.id},${u.is_active},'patients')" class="${u.is_active ? 'bg-amber-50 hover:bg-amber-100 text-amber-700' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700'} font-bold py-1 px-2.5 rounded-xl text-[10px] uppercase tracking-wider transition-all">${u.is_active ? 'Deactivate' : 'Activate'}</button>
+                    <button onclick="showConfirm('Remove Patient?','This will permanently delete ${u.full_name.replace(/'/g,"\\'")} from the system.','🗑️',()=>deleteUser(${u.id},'patients'))" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold py-1 px-2.5 rounded-xl text-[10px] uppercase tracking-wider transition-all">Delete</button>
+                  </div>
+                </td>
+              </tr>`).join('')}
+            </tbody>
+          </table>`;
+      } catch(e) {
+        document.getElementById('patients-table').innerHTML = `<div class="text-red-400 text-center py-12">Error: ${e.message}</div>`;
+      }
+    }
+
+    function openAddPatientModal() { openModal('modal-add-patient'); }
+
+    async function submitAddPatient() {
+      const name = document.getElementById('np-name').value.trim();
+      const email = document.getElementById('np-email').value.trim();
+      const phone = document.getElementById('np-phone').value.trim();
+      const password = document.getElementById('np-password').value;
+      const age = parseInt(document.getElementById('np-age').value) || null;
+      const blood = document.getElementById('np-blood').value;
+      const history = document.getElementById('np-history').value.trim();
+      const chronic = document.getElementById('np-chronic').value.trim();
+      const errEl = document.getElementById('np-error');
+      errEl.classList.add('hidden');
+
+      if (!name || !email || !phone || !password) {
+        errEl.textContent = 'Name, email, phone and password are required.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      if (password.length < 8) {
+        errEl.textContent = 'Password must be at least 8 characters.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      try {
+        let url = `/admin/users?full_name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&role=patient`;
+        if (age) url += `&age=${age}`;
+        if (blood) url += `&blood_group=${encodeURIComponent(blood)}`;
+        if (history) url += `&medical_history=${encodeURIComponent(history)}`;
+        if (chronic) url += `&chronic_conditions=${encodeURIComponent(chronic)}`;
+        await apiPost(url, {});
+        closeModal('modal-add-patient');
+        toast('Patient registered successfully! 🧑‍🤝‍🧑');
+        loadPatients();
+      } catch(e) {
+        errEl.textContent = e.message;
+        errEl.classList.remove('hidden');
+      }
+    }
+
+    async function toggleUserActive(userId, isActive, reloadFn) {
+      try {
+        const endpoint = isActive ? `/admin/users/${userId}/deactivate` : `/admin/users/${userId}/activate`;
+        await apiPatch(endpoint, {});
+        toast(isActive ? 'User deactivated' : 'User activated');
+        if (reloadFn === 'patients') loadPatients();
+        else if (reloadFn === 'users') loadUsers();
+      } catch(e) { toast('Failed: '+e.message,'❌'); }
+    }
+
+    async function deleteUser(userId, reloadFn) {
+      try {
+        await apiDelete(`/admin/users/${userId}`);
+        toast('User deleted successfully');
+        if (reloadFn === 'patients') loadPatients();
+        else if (reloadFn === 'users') loadUsers();
+      } catch(e) {
+        // Extract the human-readable reason from the error string (format: "400: <detail>" or "403: <detail>")
+        const reason = e.message.replace(/^\d+:\s*/, '');
+        toast(`⛔ ${reason}`, '⛔');
+      }
+    }
+
+    // ─── Add Hospital & General User JS ──────────────────────────
+    function openAddHospitalModal() { openModal('modal-add-hospital'); }
+
+    async function submitAddHospital() {
+      const name = document.getElementById('nh-name').value.trim();
+      const email = document.getElementById('nh-email').value.trim();
+      const phone = document.getElementById('nh-phone').value.trim();
+      const address = document.getElementById('nh-address').value.trim();
+      const city = document.getElementById('nh-city').value.trim();
+      const state = document.getElementById('nh-state').value.trim();
+      const zip = document.getElementById('nh-zip').value.trim();
+      const lat = parseFloat(document.getElementById('nh-lat').value);
+      const lon = parseFloat(document.getElementById('nh-lon').value);
+      const spec = document.getElementById('nh-spec').value.trim();
+      const beds = parseInt(document.getElementById('nh-beds').value) || 0;
+      const icu = parseInt(document.getElementById('nh-icu').value) || 0;
+      const emergency = document.getElementById('nh-emergency').checked;
+
+      const adminName = document.getElementById('nh-admin-name').value.trim();
+      const adminEmail = document.getElementById('nh-admin-email').value.trim();
+      const adminPhone = document.getElementById('nh-admin-phone').value.trim();
+      const adminPassword = document.getElementById('nh-admin-password').value;
+
+      const errEl = document.getElementById('nh-error');
+      errEl.classList.add('hidden');
+
+      if (!name || !email || !phone || !address || !city || !state || isNaN(lat) || isNaN(lon) || !spec || !adminName || !adminEmail || !adminPhone || !adminPassword) {
+        errEl.textContent = 'All fields marked with * are required.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      if (adminPassword.length < 8) {
+        errEl.textContent = 'Admin password must be at least 8 characters.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+
+      const specsArray = spec.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+      const specsJson = JSON.stringify(specsArray);
+
+      try {
+        let url = `/admin/hospitals/create-with-account`;
+        url += `?hospital_name=${encodeURIComponent(name)}&address=${encodeURIComponent(address)}&city=${encodeURIComponent(city)}&state=${encodeURIComponent(state)}&zip_code=${encodeURIComponent(zip)}&phone=${encodeURIComponent(phone)}&email=${encodeURIComponent(email)}&latitude=${lat}&longitude=${lon}&specializations=${encodeURIComponent(specsJson)}&emergency_supported=${emergency}&available_beds=${beds}&icu_beds=${icu}`;
+        url += `&admin_name=${encodeURIComponent(adminName)}&admin_email=${encodeURIComponent(adminEmail)}&admin_phone=${encodeURIComponent(adminPhone)}&admin_password=${encodeURIComponent(adminPassword)}`;
+
+        const result = await apiPost(url, {});
+        closeModal('modal-add-hospital');
+        ['nh-name','nh-email','nh-phone','nh-address','nh-city','nh-state','nh-zip','nh-lat','nh-lon','nh-spec','nh-beds','nh-icu','nh-admin-name','nh-admin-email','nh-admin-phone','nh-admin-password'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('nh-emergency').checked = true;
+
+        toast(`Hospital & Admin account created! ${result.admin_name} can log in at /login 🏥`);
+        loadHospitals();
+      } catch (e) {
+        errEl.textContent = e.message;
+        errEl.classList.remove('hidden');
+      }
+    }
+
+    async function openAddUserModal() {
+      openModal('modal-add-user');
+      toggleUserHospitalDropdown();
+      if (!_hospitalData || !_hospitalData.length) {
+        try {
+          _hospitalData = await apiGet('/admin/hospitals');
+        } catch (e) { console.error(e); }
+      }
+      const nuHospital = document.getElementById('nu-hospital');
+      nuHospital.innerHTML = '<option value="">Select Hospital</option>' +
+        (_hospitalData || []).map(h => `<option value="${h.id}">${h.hospital_name}</option>`).join('');
+    }
+
+    function toggleUserHospitalDropdown() {
+      const role = document.getElementById('nu-role').value;
+      const div = document.getElementById('nu-hospital-div');
+      if (role === 'hospital_admin' || role === 'doctor') {
+        div.classList.remove('hidden');
+      } else {
+        div.classList.add('hidden');
+      }
+    }
+
+    async function submitAddUser() {
+      const name = document.getElementById('nu-name').value.trim();
+      const email = document.getElementById('nu-email').value.trim();
+      const phone = document.getElementById('nu-phone').value.trim();
+      const password = document.getElementById('nu-password').value;
+      const role = document.getElementById('nu-role').value;
+      const hospId = document.getElementById('nu-hospital').value;
+      const errEl = document.getElementById('nu-error');
+      errEl.classList.add('hidden');
+
+      if (!name || !email || !phone || !password || !role) {
+        errEl.textContent = 'Name, email, phone, password and role are required.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      if (password.length < 8) {
+        errEl.textContent = 'Password must be at least 8 characters.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      if ((role === 'hospital_admin' || role === 'doctor') && !hospId) {
+        errEl.textContent = 'Please select a hospital facility for this role.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+
+      try {
+        let url = `/admin/users?full_name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&role=${role}`;
+        if (hospId) url += `&hospital_id=${hospId}`;
+
+        await apiPost(url, {});
+        closeModal('modal-add-user');
+        ['nu-name','nu-email','nu-phone','nu-password'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('nu-role').value = 'patient';
+        toast(`User account registered successfully! 👥`);
+        loadUsers();
+      } catch (e) {
+        errEl.textContent = e.message;
+        errEl.classList.remove('hidden');
+      }
+    }
+
+    // ─── All Users ───────────────────────────────────────────────
     async function loadUsers() {
       const role = document.getElementById('user-role-filter').value;
       try {
-        let url = '/admin/users?';
-        if (role) url += `role=${role}`;
+        let url = '/admin/users?limit=100';
+        if (role) url += `&role=${role}`;
         const data = await apiGet(url);
         document.getElementById('users-table').innerHTML = `
           <table class="w-full text-sm">
             <thead><tr class="text-left bg-slate-50 border-b border-slate-100 text-slate-400 uppercase text-[10px] tracking-wider font-bold">
-              <th class="px-6 py-4">Name</th>
-              <th class="px-6 py-4">Email Address</th>
-              <th class="px-6 py-4">Access Role</th>
-              <th class="px-6 py-4">Phone Number</th>
-              <th class="px-6 py-4">State</th>
+              <th class="px-6 py-4">Name</th><th class="px-6 py-4">Email</th>
+              <th class="px-6 py-4">Role</th><th class="px-6 py-4">Phone</th>
+              <th class="px-6 py-4">Status</th><th class="px-6 py-4">Actions</th>
             </tr></thead>
             <tbody class="divide-y divide-slate-50">
-              ${data.map(u => `<tr class="hover:bg-slate-50/50 transition-colors text-xs text-slate-700">
-                <td class="px-6 py-4 font-bold text-slate-900 font-display">${u.full_name}</td>
-                <td class="px-6 py-4 text-slate-450">${u.email}</td>
-                <td class="px-6 py-4 capitalize font-semibold text-slate-600">${u.role.replace('_', ' ')}</td>
-                <td class="px-6 py-4 text-slate-450 font-mono">${u.phone || '—'}</td>
-                <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${u.is_active ? 'bg-emerald-50 text-emerald-700 border border-emerald-100/50' : 'bg-red-50 text-red-700 border border-red-100/50'}">${u.is_active ? 'Active' : 'Inactive'}</span></td>
-              </tr>`).join('')}
+              ${data.map(u => {
+                const isSelf     = u.id === _currentUserId;
+                const isSysAdmin = u.role === 'system_admin';
+                const canDelete  = !isSelf && !isSysAdmin;
+                const nameCell   = `${u.full_name}${isSelf ? ' <span class="text-[9px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-md font-bold ml-1">YOU</span>' : ''}`;
+                const rowClass   = isSelf ? 'bg-blue-50/40' : isSysAdmin ? 'bg-amber-50/20' : '';
+                const deactivateBtn = !isSelf
+                  ? `<button onclick="toggleUserActive(${u.id},${u.is_active},'users')" class="${u.is_active ? 'bg-amber-50 hover:bg-amber-100 text-amber-700' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700'} font-bold py-1 px-2.5 rounded-xl text-[10px] uppercase tracking-wider transition-all">${u.is_active ? 'Deactivate' : 'Activate'}</button>`
+                  : '';
+                const deleteBtn = canDelete
+                  ? `<button onclick="showConfirm('Delete User?','Permanently delete ${u.full_name.replace(/'/g,"\\'")}? This cannot be undone.','🗑️',()=>deleteUser(${u.id},'users'))" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold py-1 px-2.5 rounded-xl text-[10px] uppercase tracking-wider transition-all">Delete</button>`
+                  : `<span class="text-slate-300 text-[10px] font-semibold px-1" title="${isSelf ? 'Cannot delete your own account' : 'System admin accounts are protected'}">🔒 Protected</span>`;
+                return `<tr class="hover:bg-slate-50/50 transition-colors text-xs text-slate-700 ${rowClass}">
+                  <td class="px-6 py-4 font-bold text-slate-900 font-display">${nameCell}</td>
+                  <td class="px-6 py-4 text-slate-450">${u.email}</td>
+                  <td class="px-6 py-4 capitalize font-semibold text-slate-600">${u.role.replace('_',' ')}</td>
+                  <td class="px-6 py-4 text-slate-450 font-mono">${u.phone||'—'}</td>
+                  <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${u.is_active ? 'bg-emerald-50 text-emerald-700 border-emerald-100/50' : 'bg-red-50 text-red-700 border-red-100/50'}">${u.is_active ? 'Active' : 'Inactive'}</span></td>
+                  <td class="px-6 py-4">
+                    <div class="flex gap-1.5 items-center">
+                      ${deactivateBtn}
+                      ${deleteBtn}
+                    </div>
+                  </td>
+                </tr>`;
+              }).join('')}
             </tbody>
           </table>`;
-      } catch (e) {
-        document.getElementById('users-table').innerHTML = `<div class="text-center text-red-400 py-12">Error loading accounts: ${e.message}</div>`;
+      } catch(e) {
+        document.getElementById('users-table').innerHTML = `<div class="text-center text-red-400 py-12">Error: ${e.message}</div>`;
       }
     }
-    // ── Admin Live Map ─────────────────────────────────────
-    let adminMap = null;
-    let adminMarkers = {};
-    let adminMapTimer = null;
 
-    const statusColors = {
-      available: '#22c55e',
-      en_route: '#3b82f6',
-      at_scene: '#f59e0b',
-      transporting: '#ef4444',
-      maintenance: '#6b7280',
-      offline: '#374151',
-    };
+
+    // ─── Admin Live Map ──────────────────────────────────────────
+    const mapStatusColors = { available:'#22c55e', en_route:'#3b82f6', at_scene:'#f59e0b', transporting:'#ef4444', maintenance:'#6b7280', offline:'#374151' };
 
     function initAdminMap() {
       if (!adminMap) {
@@ -290,7 +1216,6 @@
         }).addTo(adminMap);
       }
       refreshAdminMap();
-      // Auto-refresh every 10 s
       if (adminMapTimer) clearInterval(adminMapTimer);
       adminMapTimer = setInterval(refreshAdminMap, 10000);
     }
@@ -301,43 +1226,28 @@
         const bounds = [];
         data.forEach(a => {
           if (!a.lat || !a.lon) return;
-          const color = statusColors[a.status] || '#6b7280';
+          const color = mapStatusColors[a.status] || '#6b7280';
           const icon = L.divIcon({
             className: '',
-            html: `<div style="
-              background:${color};
-              border:3px solid white;
-              border-radius:50%;
-              width:36px;height:36px;
-              display:flex;align-items:center;justify-content:center;
-              font-size:18px;
-              box-shadow:0 2px 6px rgba(0,0,0,.4);
-            ">🚑</div>`,
-            iconSize: [36, 36],
-            iconAnchor: [18, 18],
+            html: `<div style="background:${color};border:3px solid white;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 6px rgba(0,0,0,.4);">🚑</div>`,
+            iconSize: [36, 36], iconAnchor: [18, 18],
           });
-          const popup = `
-            <b>${a.number}</b><br>
-            Type: ${a.type}<br>
-            Status: <b style="color:${color}">${a.status.replace('_',' ')}</b><br>
-            Location: ${a.lat.toFixed(4)}, ${a.lon.toFixed(4)}
-          `;
+          const popup = `<b>${a.number}</b><br>Type: ${a.type}<br>Status: <b style="color:${color}">${a.status.replace(/_/g,' ')}</b><br>${a.driver_name ? `Driver: <b>${a.driver_name}</b><br>Driver status: ${a.driver_available ? '✅ Available' : '🟡 Off-duty'}` : '⚠️ No driver assigned'}`;
           if (adminMarkers[a.id]) {
-            adminMarkers[a.id].setLatLng([a.lat, a.lon])
-              .setIcon(icon)
-              .setPopupContent(popup);
+            adminMarkers[a.id].setLatLng([a.lat, a.lon]).setIcon(icon).setPopupContent(popup);
           } else {
-            adminMarkers[a.id] = L.marker([a.lat, a.lon], { icon })
-              .addTo(adminMap)
-              .bindPopup(popup);
+            adminMarkers[a.id] = L.marker([a.lat, a.lon], { icon }).addTo(adminMap).bindPopup(popup);
           }
           bounds.push([a.lat, a.lon]);
         });
-        if (bounds.length > 0) {
-          adminMap.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+        if (bounds.length > 0) adminMap.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+      } catch(e) {
+        const status = parseInt(e.message);
+        if (status === 401 || status === 403) {
+          if (adminMapTimer) { clearInterval(adminMapTimer); adminMapTimer = null; }
+          logout();
+          return;
         }
-      } catch (e) {
-        console.warn('Admin map refresh failed:', e.message);
       }
     }
   </script>

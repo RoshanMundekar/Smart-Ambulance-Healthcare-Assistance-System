@@ -66,7 +66,12 @@
         <p class="text-slate-400 text-xs mt-1 uppercase tracking-wider font-semibold">Crisis Logistics Portal</p>
       </div>
 
-      <!-- Tabs Container -->
+      <!-- Session-expired banner (shown when ?expired=1 is in URL) -->
+      <div id="expired-banner" class="hidden mb-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl px-5 py-3.5 text-sm font-semibold flex items-center gap-3">
+        <span class="text-xl">⏱️</span>
+        <span>Your session expired. Please log in again to continue.</span>
+      </div>
+
       <div class="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-150/40 overflow-hidden">
         <div class="flex border-b border-slate-100 bg-slate-50/50">
           <button onclick="switchTab('login')" id="tab-login"
@@ -177,10 +182,14 @@
     </div>
   </footer>
 
-  <script src="/static/js/api.js"></script>
-  <script src="/static/js/auth.js"></script>
+  <script src="/static/js/api.js?v=2"></script>
+  <script src="/static/js/auth.js?v=2"></script>
   <script>
     if (window.location.hash === '#register') switchTab('register');
+    // Show session-expired banner when redirected from an expired token
+    if (new URLSearchParams(window.location.search).get('expired') === '1') {
+      document.getElementById('expired-banner').classList.remove('hidden');
+    }
     function toggleMobileMenu() {
       const menu = document.getElementById('mobile-menu');
       menu.classList.toggle('hidden');

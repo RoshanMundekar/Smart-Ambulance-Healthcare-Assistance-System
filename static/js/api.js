@@ -21,9 +21,27 @@ async function handleResponse(res) {
   const text = await res.text();
   let data;
   try { data = JSON.parse(text); } catch { data = text; }
+
   if (!res.ok) {
-    const msg = typeof data === 'object' ? (data.detail || JSON.stringify(data)) : data;
-    throw new Error(msg || `HTTP ${res.status}`);
+    const detail = typeof data === 'object' ? (data.detail || JSON.stringify(data)) : data;
+
+    // ── Global session-expiry handler ────────────────────────────────────────
+    // 401 = token expired or missing → clear session and redirect to login
+    if (res.status === 401) {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user');
+      // Avoid redirect loops if we are already on the login page
+      if (!window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login?expired=1';
+      }
+      // Throw so the current call stack unwinds cleanly (intervals stop naturally)
+      throw new Error('401: Session expired. Please log in again.');
+    }
+    // ────────────────────────────────────────────────────────────────────────
+
+    // 403 and all other errors: throw with status prefix so callers can detect them
+    throw new Error(`${res.status}: ${detail || res.statusText}`);
   }
   return data;
 }

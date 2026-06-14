@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS users (
     emergency_contact_name VARCHAR(150),
     emergency_contact_phone VARCHAR(20),
     role ENUM('patient', 'driver', 'doctor', 'hospital_admin', 'system_admin') DEFAULT 'patient',
+    hospital_id INT,
     is_active TINYINT(1) DEFAULT 1,
     profile_image VARCHAR(500),
     address TEXT,
@@ -66,6 +67,9 @@ CREATE TABLE IF NOT EXISTS hospitals (
     INDEX idx_location (latitude, longitude),
     INDEX idx_emergency (emergency_supported)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Add foreign key constraint to users table linking to hospitals
+ALTER TABLE users ADD CONSTRAINT fk_users_hospital FOREIGN KEY (hospital_id) REFERENCES hospitals(id) ON DELETE SET NULL;
 
 -- ============================================================
 -- DOCTORS TABLE

@@ -17,8 +17,18 @@ def setup():
     try:
         Base.metadata.create_all(bind=engine)
         logger.info("Tables created successfully.")
+
+        # Dynamic migration: ensure hospital_id exists in users table
+        from sqlalchemy import text
+        with engine.begin() as conn:
+            columns_result = conn.execute(text("SHOW COLUMNS FROM users LIKE 'hospital_id'")).fetchone()
+            if not columns_result:
+                logger.info("Database migration: adding hospital_id column to users table...")
+                conn.execute(text("ALTER TABLE users ADD COLUMN hospital_id INT NULL"))
+                conn.execute(text("ALTER TABLE users ADD CONSTRAINT fk_users_hospital FOREIGN KEY (hospital_id) REFERENCES hospitals(id) ON DELETE SET NULL"))
+                logger.info("Database migration: hospital_id column and foreign key constraint added successfully.")
     except Exception as e:
-        logger.error(f"Table creation failed: {e}")
+        logger.error(f"Table creation/migration failed: {e}")
         sys.exit(1)
 
     db = SessionLocal()
@@ -91,7 +101,7 @@ def setup():
                  medical_history="Hypertension diagnosed 2020", chronic_conditions="Hypertension"),
             User(full_name="Sarah Patient",     age=28, gender="female", phone="+91-9876543216", email="sarah@patient.com",              password_hash=pw, blood_group="AB+", role="patient",
                  medical_history="Diabetes Type 2", chronic_conditions="Diabetes"),
-            User(full_name="Hospital Admin",    age=40, gender="female", phone="+91-9876543217", email="admin@citygeneral.com",           password_hash=pw, blood_group="O+", role="hospital_admin"),
+            User(full_name="Hospital Admin",    age=40, gender="female", phone="+91-9876543217", email="admin@citygeneral.com",           password_hash=pw, blood_group="O+", role="hospital_admin", hospital_id=1),
         ]
         for u in users:
             db.add(u)

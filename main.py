@@ -5,11 +5,11 @@ FastAPI Application Entry Point
 import os
 import sys
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse
 from loguru import logger
 from dotenv import load_dotenv
 
@@ -38,8 +38,18 @@ async def lifespan(app: FastAPI):
         try:
             Base.metadata.create_all(bind=engine)
             logger.info("Database tables verified/created")
+
+            # Dynamic migration: ensure hospital_id exists in users table
+            from sqlalchemy import text
+            with engine.begin() as conn:
+                columns_result = conn.execute(text("SHOW COLUMNS FROM users LIKE 'hospital_id'")).fetchone()
+                if not columns_result:
+                    logger.info("Database migration: adding hospital_id column to users table...")
+                    conn.execute(text("ALTER TABLE users ADD COLUMN hospital_id INT NULL"))
+                    conn.execute(text("ALTER TABLE users ADD CONSTRAINT fk_users_hospital FOREIGN KEY (hospital_id) REFERENCES hospitals(id) ON DELETE SET NULL"))
+                    logger.info("Database migration: hospital_id column and foreign key constraint added successfully.")
         except Exception as e:
-            logger.error(f"Table creation error: {e}")
+            logger.error(f"Table creation/migration error: {e}")
     else:
         logger.error("Database connection failed! Check your .env configuration.")
     yield
@@ -135,7 +145,11 @@ def hospital_page(request: Request):
 
 @app.get("/admin", include_in_schema=False)
 def admin_page(request: Request):
-    return templates.TemplateResponse("admin.html", {"request": request})
+    response = templates.TemplateResponse("admin.html", {"request": request})
+    # Prevent browser from caching this page so the role-guard JS is always fresh
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    return response
 
 
 # ============================================================

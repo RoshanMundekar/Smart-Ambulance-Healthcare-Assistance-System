@@ -141,8 +141,8 @@
     </div>
   </div>
 
-  <script src="/static/js/api.js"></script>
-  <script src="/static/js/auth.js"></script>
+  <script src="/static/js/api.js?v=2"></script>
+  <script src="/static/js/auth.js?v=2"></script>
   <script>
     let isAvailable = true;
     let activeEmergencyId = null;
@@ -150,7 +150,17 @@
     let locationInterval = null;
 
     document.addEventListener('DOMContentLoaded', async () => {
-      if (!requireAuth()) return;
+      const user = requireAuth();
+      if (!user) return;
+
+      // Guard: only driver (and system_admin) may access this page
+      if (user.role !== 'driver' && user.role !== 'system_admin') {
+        window.location.href = user.role === 'hospital_admin' ? '/hospital'
+          : user.role === 'doctor' ? '/consultation'
+          : '/dashboard';
+        return;
+      }
+
       await loadDashboard();
       startLocationTracking();
     });

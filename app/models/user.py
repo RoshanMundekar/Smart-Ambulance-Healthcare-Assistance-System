@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, Text, DECIMAL, Enum, TIMESTAMP, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, Text, DECIMAL, Enum, TIMESTAMP, DateTime, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.database.connection import Base
@@ -30,6 +30,7 @@ class User(Base):
     emergency_contact_name = Column(String(150))
     emergency_contact_phone = Column(String(20))
     role = Column(Enum("patient", "driver", "doctor", "hospital_admin", "system_admin"), default="patient")
+    hospital_id = Column(Integer, ForeignKey("hospitals.id", ondelete="SET NULL"), nullable=True)
     is_active = Column(Boolean, default=True)
     profile_image = Column(String(500))
     address = Column(Text)
