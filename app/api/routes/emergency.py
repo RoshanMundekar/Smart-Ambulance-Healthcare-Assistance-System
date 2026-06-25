@@ -220,6 +220,29 @@ async def update_emergency_status(
 
     return emergency
 
+@router.delete("/{emergency_id}")
+async def delete_emergency(
+    emergency_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    emergency = db.query(EmergencyRequest).filter(EmergencyRequest.id == emergency_id).first()
+    if not emergency:
+        raise HTTPException(status_code=404, detail="Emergency not found")
+        
+    if current_user.role not in ["system_admin", "hospital_admin"]:
+        raise HTTPException(status_code=403, detail="Not authorized to delete emergencies")
+        
+    # Free up the ambulance if assigned
+    if emergency.assigned_ambulance_id:
+        amb = db.query(Ambulance).filter(Ambulance.id == emergency.assigned_ambulance_id).first()
+        if amb:
+            amb.status = "available"
+            
+    db.delete(emergency)
+    db.commit()
+    return {"message": "Emergency deleted"}
+
 
 @router.post("/ambulance/location")
 async def update_ambulance_location(

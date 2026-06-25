@@ -9,7 +9,7 @@ from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse
+from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse, FileResponse
 from loguru import logger
 from dotenv import load_dotenv
 
@@ -110,6 +110,11 @@ app.include_router(hospital_router, prefix=API_PREFIX)
 app.include_router(admin_router, prefix=API_PREFIX)
 
 
+@app.get("/sw.js", include_in_schema=False)
+def serve_sw():
+    return FileResponse("static/sw.js", media_type="application/javascript")
+
+
 # ============================================================
 # Page Routes  (HTML)
 # ============================================================
@@ -155,7 +160,7 @@ def admin_page(request: Request):
 # ============================================================
 # Health Check
 # ============================================================
-@app.get("/health", tags=["Health"])
+@app.get("/info", tags=["Health"])
 def root():
     return {
         "name": "Smart Ambulance & Healthcare System",
@@ -175,6 +180,31 @@ def health_check():
             "database": "connected" if db_ok else "disconnected",
         },
     )
+
+
+# ============================================================
+# TWA Digital Asset Links (required for Android TWA APK)
+# Allows the APK to run without the browser address bar.
+# After building the APK, replace the placeholder fingerprint
+# with the real SHA-256 from your keystore.
+# ============================================================
+@app.get("/.well-known/assetlinks.json", include_in_schema=False)
+def asset_links():
+    package_name = os.getenv("TWA_PACKAGE_NAME", "com.smartambulance.healthcare")
+    fingerprint = os.getenv(
+        "TWA_SHA256_FINGERPRINT",
+        "00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00",
+    )
+    return JSONResponse([
+        {
+            "relation": ["delegate_permission/common.handle_all_urls"],
+            "target": {
+                "namespace": "android_app",
+                "package_name": package_name,
+                "sha256_cert_fingerprints": [fingerprint],
+            },
+        }
+    ])
 
 
 if __name__ == "__main__":

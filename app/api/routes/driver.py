@@ -2,10 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime
+from pydantic import BaseModel
 
 from app.database.connection import get_db
 from app.models.user import User
 from app.models.ambulance import Driver, Ambulance
+from app.models.hospital import Hospital
 from app.models.booking import EmergencyRequest
 from app.auth.rbac import require_driver
 from app.utils.notifications import ws_manager
@@ -34,12 +36,18 @@ def driver_dashboard(
                 "equipment": amb.equipment,
             }
 
-    # Active emergency
+    # Active emergency — includes all in-progress statuses including 'arrived'
     active_emergency = (
         db.query(EmergencyRequest)
         .filter(
             EmergencyRequest.assigned_driver_id == driver.id,
-            EmergencyRequest.status.in_(["ambulance_assigned", "en_route", "at_scene", "transporting"]),
+            EmergencyRequest.status.in_([
+                "ambulance_assigned",
+                "en_route",
+                "at_scene",
+                "transporting",
+                "arrived",
+            ]),
         )
         .first()
     )
@@ -57,6 +65,21 @@ def driver_dashboard(
                 "chronic_conditions": patient.chronic_conditions,
                 "allergies": patient.allergies,
                 "phone": patient.phone,
+            }
+
+    # Resolve hospital name for the active emergency
+    hospital_info = None
+    if active_emergency and active_emergency.assigned_hospital_id:
+        hosp = db.query(Hospital).filter(Hospital.id == active_emergency.assigned_hospital_id).first()
+        if hosp:
+            hospital_info = {
+                "id": hosp.id,
+                "name": hosp.hospital_name,
+                "address": hosp.address,
+                "city": hosp.city,
+                "phone": hosp.phone,
+                "latitude": float(hosp.latitude),
+                "longitude": float(hosp.longitude),
             }
 
     return {
@@ -77,7 +100,15 @@ def driver_dashboard(
             "patient_address": active_emergency.patient_address if active_emergency else None,
             "eta_minutes": active_emergency.eta_minutes if active_emergency else None,
             "hospital_id": active_emergency.assigned_hospital_id if active_emergency else None,
+            "hospital_name": hospital_info["name"] if hospital_info else None,
+            "hospital_address": hospital_info["address"] if hospital_info else None,
+            "hospital_city": hospital_info["city"] if hospital_info else None,
+            "hospital_phone": hospital_info["phone"] if hospital_info else None,
+            "hospital_lat": hospital_info["latitude"] if hospital_info else None,
+            "hospital_lon": hospital_info["longitude"] if hospital_info else None,
             "emergency_type": active_emergency.emergency_type if active_emergency else None,
+            "severity": active_emergency.severity if active_emergency else None,
+            "ai_specialist": active_emergency.ai_specialist_recommendation if active_emergency else None,
             "patient": patient_info,
         } if active_emergency else None,
     }
@@ -94,6 +125,27 @@ def toggle_availability(
     driver.is_available = not driver.is_available
     db.commit()
     return {"is_available": driver.is_available, "message": f"Status set to {'available' if driver.is_available else 'unavailable'}"}
+
+
+class AmbStatusPayload(BaseModel):
+    status: str
+
+@router.patch("/ambulance/status")
+def driver_update_amb_status(
+    payload: AmbStatusPayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_driver),
+):
+    driver = db.query(Driver).filter(Driver.user_id == current_user.id).first()
+    if not driver or not driver.ambulance_id:
+        raise HTTPException(status_code=400, detail="No ambulance assigned")
+    amb = db.query(Ambulance).filter(Ambulance.id == driver.ambulance_id).first()
+    if not amb:
+        raise HTTPException(status_code=404, detail="Ambulance not found")
+    
+    amb.status = payload.status
+    db.commit()
+    return {"status": amb.status, "message": f"Ambulance status updated to {payload.status.replace('_', ' ')}"}
 
 
 @router.post("/location")

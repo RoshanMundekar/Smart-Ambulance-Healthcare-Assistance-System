@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Login / Register — SmartAmbulance</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="manifest" href="/static/manifest.json">
   <script>
     tailwind.config = {
       theme: {
@@ -53,7 +54,7 @@
   </nav>
 
   <!-- MAIN CONTAINER -->
-  <main class="flex-grow flex items-center justify-center p-6 sm:p-12 relative overflow-hidden">
+  <main class="flex-grow flex items-center justify-center p-4 sm:p-12 relative overflow-hidden">
     <!-- Ambient background glow elements -->
     <div class="absolute w-[500px] h-[500px] rounded-full bg-red-600/[0.03] blur-[120px] -top-40 -left-40 pointer-events-none"></div>
     <div class="absolute w-[400px] h-[400px] rounded-full bg-amber-500/[0.03] blur-[100px] -bottom-20 -right-20 pointer-events-none"></div>
@@ -142,13 +143,13 @@
                   class="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm placeholder:text-slate-400 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/20 transition-all"/>
               </div>
             </div>
-            <div class="grid grid-cols-3 gap-4">
-              <div class="col-span-1">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
                 <label class="block text-xs font-semibold text-slate-505 mb-1.5 uppercase tracking-wider">Age</label>
                 <input type="number" id="reg-age" min="1" max="120" placeholder="25"
                   class="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm placeholder:text-slate-400 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/20 transition-all"/>
               </div>
-              <div class="col-span-2">
+              <div class="sm:col-span-2">
                 <label class="block text-xs font-semibold text-slate-505 mb-1.5 uppercase tracking-wider">Blood Group</label>
                 <select id="reg-blood" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/20 transition-all">
                   <option value="" class="bg-white">Select</option>

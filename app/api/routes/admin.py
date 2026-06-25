@@ -559,12 +559,23 @@ def list_ambulances(
     result = []
     for a in ambulances:
         driver = db.query(Driver).filter(Driver.ambulance_id == a.id, Driver.is_active == True).first()
+        hospital = db.query(Hospital).filter(Hospital.id == a.hospital_id).first() if a.hospital_id else None
+        # Get active emergency for this driver
+        active_em = None
+        if driver:
+            from app.models.booking import EmergencyRequest
+            active_em = db.query(EmergencyRequest).filter(
+                EmergencyRequest.assigned_driver_id == driver.id,
+                EmergencyRequest.status.notin_(["completed", "cancelled"]),
+            ).first()
         result.append({
             "id": a.id,
             "number": a.ambulance_number,
             "type": a.vehicle_type,
             "status": a.status,
             "hospital_id": a.hospital_id,
+            "hospital_name": hospital.hospital_name if hospital else None,
+            "hospital_city": hospital.city if hospital else None,
             "lat": float(a.current_latitude or 0),
             "lon": float(a.current_longitude or 0),
             "is_active": a.is_active,
@@ -573,6 +584,9 @@ def list_ambulances(
             "driver_phone": driver.phone if driver else None,
             "driver_available": driver.is_available if driver else None,
             "driver_rating": float(driver.performance_rating or 0) if driver else None,
+            "active_emergency_id": active_em.id if active_em else None,
+            "active_emergency_status": active_em.status if active_em else None,
+            "active_emergency_type": active_em.emergency_type if active_em else None,
         })
     return result
 

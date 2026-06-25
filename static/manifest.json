@@ -1,0 +1,64 @@
+{
+  "name": "Smart Ambulance & Healthcare Assistance System",
+  "short_name": "SmartAmbulance",
+  "description": "AI-Powered Emergency & Healthcare Platform — Book ambulances, consult doctors, and get AI symptom analysis.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#dc2626",
+  "lang": "en",
+  "categories": ["health", "medical", "utilities"],
+  "icons": [
+    {
+      "src": "/static/icon_192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/icon_192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/static/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/static/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "label": "Smart Ambulance Dashboard"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Emergency Ambulance",
+      "short_name": "Emergency",
+      "description": "Book an emergency ambulance instantly",
+      "url": "/dashboard",
+      "icons": [{ "src": "/static/icon_192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Doctor Consultation",
+      "short_name": "Consult",
+      "description": "Consult a doctor online",
+      "url": "/consultation",
+      "icons": [{ "src": "/static/icon_192.png", "sizes": "192x192" }]
+    }
+  ],
+  "prefer_related_applications": false
+}

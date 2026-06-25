@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Driver Dashboard — SmartAmbulance</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="manifest" href="/static/manifest.json">
   <script>
     tailwind.config = {
       theme: {
@@ -40,6 +41,17 @@
       </div>
     </div>
     <div class="flex items-center gap-4">
+      <!-- Ambulance Status Dropdown -->
+      <select id="amb-status-select" onchange="updateAmbulanceStatus(this.value)" class="bg-slate-800 text-slate-200 border border-slate-700/60 px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-red-500 hover:bg-slate-700 transition-all cursor-pointer">
+        <option value="available">🚑 Available</option>
+        <option value="en_route">🎯 En Route</option>
+        <option value="at_scene">🏥 At Scene</option>
+        <option value="transporting">🏃 Transporting</option>
+        <option value="maintenance">🔧 Maintenance</option>
+        <option value="offline">⚫ Offline</option>
+      </select>
+      
+      <!-- Driver Availability Toggle -->
       <div class="flex items-center gap-2 bg-slate-950 px-3.5 py-1.5 rounded-xl border border-slate-800/80">
         <div id="availability-dot" class="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse"></div>
         <span id="availability-text" class="text-xs font-semibold text-slate-300">Available</span>
@@ -52,7 +64,7 @@
     </div>
   </header>
 
-  <div class="max-w-4xl mx-auto px-6 py-8 relative z-10">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 relative z-10">
 
     <!-- ACTIVE EMERGENCY ALERT -->
     <div id="active-emergency" class="hidden mb-8">
@@ -68,7 +80,7 @@
         <!-- Patient Info -->
         <div class="bg-black/25 border border-white/5 rounded-2xl p-5 mb-5">
           <h3 class="font-bold text-red-200 text-sm mb-3.5 font-display tracking-wide uppercase">Patient Medical Profile</h3>
-          <div class="grid grid-cols-2 gap-4 text-xs">
+          <div class="grid grid-cols-1 min-[400px]:grid-cols-2 gap-4 text-xs">
             <div><p class="text-red-300/80 font-medium">Full Name</p><p class="font-bold text-white text-sm" id="pat-name">—</p></div>
             <div><p class="text-red-300/80 font-medium">Blood Group</p><p class="font-bold text-white text-sm" id="pat-blood">—</p></div>
             <div><p class="text-red-300/80 font-medium">Age</p><p class="font-bold text-white text-sm" id="pat-age">—</p></div>
@@ -85,17 +97,70 @@
         </div>
 
         <!-- Route Info -->
-        <div class="bg-black/25 border border-white/5 rounded-2xl p-5 mb-6">
+        <div class="bg-black/25 border border-white/5 rounded-2xl p-5 mb-5">
           <h3 class="font-bold text-red-200 text-sm mb-3.5 font-display tracking-wide uppercase">Dispatch Logistics</h3>
-          <div class="grid grid-cols-3 gap-4 text-center text-xs">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center text-xs mb-4">
             <div><p class="text-red-300/80 font-medium">ETA</p><p class="font-black text-white text-2xl mt-0.5" id="em-eta">—</p><p class="text-red-300/60 font-semibold tracking-wider uppercase text-[9px]">mins</p></div>
-            <div><p class="text-red-300/80 font-medium">Pickup address</p><p class="font-bold text-white text-xs mt-1 leading-normal" id="em-pickup">Loading...</p></div>
-            <div><p class="text-red-300/80 font-medium">Receiving hospital</p><p class="font-bold text-white text-xs mt-1 leading-normal" id="em-hospital">Loading...</p></div>
+            <div><p class="text-red-300/80 font-medium">Pickup Address</p><p class="font-bold text-white text-xs mt-1 leading-normal" id="em-pickup">Loading...</p></div>
+            <div><p class="text-red-300/80 font-medium">Emergency Type</p><p class="font-bold text-white text-xs mt-1 capitalize" id="em-type">—</p></div>
+          </div>
+          <!-- Hospital Info Banner -->
+          <div id="em-hospital-banner" class="hidden mt-3 bg-white/10 border border-white/15 rounded-2xl px-4 py-3">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-[10px] font-bold text-red-300/80 uppercase tracking-wider mb-1">🏥 Receiving Hospital</p>
+                <p class="font-black text-white text-sm leading-snug" id="em-hospital">—</p>
+                <p class="text-red-200/70 text-[11px] mt-0.5" id="em-hospital-city">—</p>
+                <p class="text-red-200/60 text-[11px] mt-0.5 font-mono" id="em-hospital-phone">—</p>
+              </div>
+              <a id="em-hospital-nav-btn" href="#" target="_blank"
+                class="flex-shrink-0 bg-white text-red-700 font-bold text-[10px] uppercase tracking-wider px-3 py-2 rounded-xl shadow hover:bg-red-50 transition-all">
+                📍 Navigate
+              </a>
+            </div>
+          </div>
+          <div id="em-hospital-none" class="hidden mt-3 bg-amber-500/10 border border-amber-400/20 rounded-xl px-4 py-2.5 text-[11px] text-amber-200 font-semibold">
+            ⏳ Receiving hospital is being assigned...
           </div>
         </div>
 
-        <!-- Actions: dynamically rendered based on current status -->
-        <div id="em-actions" class="space-y-3"></div>
+        <!-- Current Status + Action -->
+        <div class="bg-black/30 border border-white/10 rounded-2xl p-4">
+          <!-- Progress Steps -->
+          <div class="flex items-center justify-between mb-4 overflow-x-auto gap-1 pb-1">
+            <div class="step-item flex flex-col items-center gap-1 min-w-[52px]" data-step="ambulance_assigned">
+              <div class="step-dot w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border-2 border-white/20 text-white/40 bg-white/5">1</div>
+              <span class="text-[9px] font-bold text-white/40 uppercase tracking-wider text-center leading-tight">Assigned</span>
+            </div>
+            <div class="flex-1 h-px bg-white/10 min-w-[8px]"></div>
+            <div class="step-item flex flex-col items-center gap-1 min-w-[52px]" data-step="en_route">
+              <div class="step-dot w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border-2 border-white/20 text-white/40 bg-white/5">2</div>
+              <span class="text-[9px] font-bold text-white/40 uppercase tracking-wider text-center leading-tight">En Route</span>
+            </div>
+            <div class="flex-1 h-px bg-white/10 min-w-[8px]"></div>
+            <div class="step-item flex flex-col items-center gap-1 min-w-[52px]" data-step="at_scene">
+              <div class="step-dot w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border-2 border-white/20 text-white/40 bg-white/5">3</div>
+              <span class="text-[9px] font-bold text-white/40 uppercase tracking-wider text-center leading-tight">At Scene</span>
+            </div>
+            <div class="flex-1 h-px bg-white/10 min-w-[8px]"></div>
+            <div class="step-item flex flex-col items-center gap-1 min-w-[52px]" data-step="transporting">
+              <div class="step-dot w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border-2 border-white/20 text-white/40 bg-white/5">4</div>
+              <span class="text-[9px] font-bold text-white/40 uppercase tracking-wider text-center leading-tight">Transport</span>
+            </div>
+            <div class="flex-1 h-px bg-white/10 min-w-[8px]"></div>
+            <div class="step-item flex flex-col items-center gap-1 min-w-[52px]" data-step="arrived">
+              <div class="step-dot w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border-2 border-white/20 text-white/40 bg-white/5">5</div>
+              <span class="text-[9px] font-bold text-white/40 uppercase tracking-wider text-center leading-tight">Arrived</span>
+            </div>
+            <div class="flex-1 h-px bg-white/10 min-w-[8px]"></div>
+            <div class="step-item flex flex-col items-center gap-1 min-w-[52px]" data-step="completed">
+              <div class="step-dot w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border-2 border-white/20 text-white/40 bg-white/5">✓</div>
+              <span class="text-[9px] font-bold text-white/40 uppercase tracking-wider text-center leading-tight">Done</span>
+            </div>
+          </div>
+          <!-- Action Button -->
+          <div id="em-actions" class="space-y-3"></div>
+        </div>
       </div>
     </div>
 
@@ -107,7 +172,7 @@
     </div>
 
     <!-- STATS -->
-    <div class="grid grid-cols-3 gap-5 mb-8">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
       <div class="bg-slate-900/40 border border-slate-800/80 rounded-3xl p-5 text-center shadow-sm">
         <p class="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">Total Trips</p>
         <p class="text-2xl font-black font-display text-white" id="stat-trips">—</p>
@@ -176,7 +241,9 @@
           updateAvailabilityUI();
         }
         if (data.ambulance) {
-          document.getElementById('stat-ambulance').textContent = data.ambulance.number;
+          document.getElementById('stat-ambulance').textContent = data.ambulance.ambulance_number;
+          const select = document.getElementById('amb-status-select');
+          if (select) select.value = data.ambulance.status || 'available';
         }
         if (data.active_emergency) {
           showEmergency(data.active_emergency);
@@ -198,6 +265,32 @@
       document.getElementById('em-severity').textContent = em.severity?.toUpperCase() || 'HIGH';
       document.getElementById('em-eta').textContent = em.eta_minutes || '—';
       document.getElementById('em-pickup').textContent = em.patient_address || `${em.patient_lat?.toFixed(4)}, ${em.patient_lon?.toFixed(4)}`;
+      document.getElementById('em-type').textContent = (em.emergency_type || 'other').replace(/_/g, ' ');
+
+      // ── Hospital info ──────────────────────────────────────────
+      const bannerEl  = document.getElementById('em-hospital-banner');
+      const noneEl    = document.getElementById('em-hospital-none');
+      if (em.hospital_name) {
+        document.getElementById('em-hospital').textContent      = em.hospital_name;
+        document.getElementById('em-hospital-city').textContent  = em.hospital_city  || '—';
+        document.getElementById('em-hospital-phone').textContent = em.hospital_phone ? `📞 ${em.hospital_phone}` : '';
+        // Google Maps navigation link
+        const navBtn = document.getElementById('em-hospital-nav-btn');
+        if (em.hospital_lat && em.hospital_lon) {
+          navBtn.href = `https://www.google.com/maps/dir/?api=1&destination=${em.hospital_lat},${em.hospital_lon}`;
+        } else {
+          navBtn.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(em.hospital_name)}`;
+        }
+        bannerEl.classList.remove('hidden');
+        noneEl.classList.add('hidden');
+        // Place hospital marker on map
+        if (em.hospital_lat && em.hospital_lon) {
+          placeHospitalMarker(em.hospital_lat, em.hospital_lon, em.hospital_name);
+        }
+      } else {
+        bannerEl.classList.add('hidden');
+        noneEl.classList.remove('hidden');
+      }
 
       if (em.patient) {
         document.getElementById('pat-name').textContent = em.patient.full_name || em.patient.name || '—';
@@ -223,26 +316,59 @@
 
     // Status → { label, color, next } defines what button to show for each state
     const STATUS_FLOW = {
-      ambulance_assigned: { label: '🚑 Start Driving (En Route)', color: 'bg-orange-400 hover:bg-orange-300', next: 'en_route' },
-      en_route:           { label: '🎯 Arrived at Scene',          color: 'bg-yellow-400 hover:bg-yellow-300', next: 'at_scene' },
-      at_scene:           { label: '🏥 Transporting Patient',       color: 'bg-blue-400   hover:bg-blue-300',   next: 'transporting' },
-      transporting:       { label: '🏥 Arrived at Hospital',        color: 'bg-green-400  hover:bg-green-300',  next: 'arrived' },
-      arrived:            { label: '✅ Mark Completed',               color: 'bg-emerald-500 hover:bg-emerald-400', next: 'completed' },
+      ambulance_assigned: { label: '🚑 Start Driving — Go En Route',  color: 'bg-orange-400 hover:bg-orange-300 text-gray-900', next: 'en_route' },
+      en_route:           { label: '🎯 Arrived at Patient Scene',       color: 'bg-yellow-400 hover:bg-yellow-300 text-gray-900', next: 'at_scene' },
+      at_scene:           { label: '🚑 Start Transporting Patient',     color: 'bg-blue-400   hover:bg-blue-300   text-gray-900', next: 'transporting' },
+      transporting:       { label: '🏥 Arrived at Hospital',            color: 'bg-purple-400 hover:bg-purple-300 text-white',    next: 'arrived' },
+      arrived:            { label: '✅ Mark Trip as Completed',          color: 'bg-emerald-500 hover:bg-emerald-400 text-white',  next: 'completed' },
     };
+
+    // Ordered step sequence for progress highlight
+    const STEP_ORDER = ['ambulance_assigned','en_route','at_scene','transporting','arrived','completed'];
 
     function renderActionButtons(currentStatus) {
       const container = document.getElementById('em-actions');
       if (!container) return;
+
+      // ── Update progress step colours ─────────────────────────────
+      const currentIdx = STEP_ORDER.indexOf(currentStatus);
+      document.querySelectorAll('.step-item').forEach(item => {
+        const step = item.dataset.step;
+        const idx  = STEP_ORDER.indexOf(step);
+        const dot  = item.querySelector('.step-dot');
+        const lbl  = item.querySelector('span');
+        if (idx < currentIdx) {
+          // Completed steps → green tick
+          dot.className = 'step-dot w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border-2 border-emerald-400 text-emerald-400 bg-emerald-900/40';
+          lbl.className = 'text-[9px] font-bold text-emerald-400 uppercase tracking-wider text-center leading-tight';
+        } else if (idx === currentIdx) {
+          // Current step → bright white with pulse ring
+          dot.className = 'step-dot w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border-2 border-white text-white bg-white/20 ring-2 ring-white/30 ring-offset-1 ring-offset-transparent';
+          lbl.className = 'text-[9px] font-bold text-white uppercase tracking-wider text-center leading-tight';
+        } else {
+          // Future steps → dim
+          dot.className = 'step-dot w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border-2 border-white/20 text-white/30 bg-white/5';
+          lbl.className = 'text-[9px] font-bold text-white/30 uppercase tracking-wider text-center leading-tight';
+        }
+      });
+
+      // ── Render next-step button ────────────────────────────────────
       const step = STATUS_FLOW[currentStatus];
       if (!step) {
         container.innerHTML = '';
         return;
       }
       container.innerHTML = `
-        <button onclick="updateEmergencyStatus('${step.next}')"
-          class="w-full ${step.color} text-gray-900 font-bold py-3 rounded-xl transition">
+        <button id="status-action-btn" onclick="handleStatusUpdate('${step.next}')"
+          class="w-full ${step.color} font-bold py-3.5 rounded-xl transition-all active:scale-[0.98] text-sm tracking-wide shadow-lg">
           ${step.label}
         </button>`;
+    }
+
+    async function handleStatusUpdate(status) {
+      const btn = document.getElementById('status-action-btn');
+      if (btn) { btn.disabled = true; btn.textContent = '⏳ Updating...'; }
+      await updateEmergencyStatus(status);
     }
 
     async function updateEmergencyStatus(status) {
@@ -285,6 +411,16 @@
       }
     }
 
+    async function updateAmbulanceStatus(status) {
+      try {
+        await apiPatch('/driver/ambulance/status', { status });
+        showToast('Ambulance Status Updated', `→ ${status.replace(/_/g, ' ').toUpperCase()}`);
+      } catch (e) {
+        showToast('❌ Error', 'Failed to update ambulance status: ' + e.message);
+        loadDashboard(); // reload to sync the UI back to true server state
+      }
+    }
+
     function updateAvailabilityUI() {
       const dot = document.getElementById('availability-dot');
       const text = document.getElementById('availability-text');
@@ -304,6 +440,7 @@
     let liveMap = null;
     let driverMarker = null;
     let patientMarker = null;
+    let hospitalMarker = null;
 
     function initMap(lat, lng) {
       if (liveMap) return; // already initialised
@@ -327,6 +464,15 @@
       return L.divIcon({
         className: '',
         html: '<div style="font-size:26px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))">🆘</div>',
+        iconSize: [28, 28],
+        iconAnchor: [14, 14],
+      });
+    }
+
+    function getHospitalIcon() {
+      return L.divIcon({
+        className: '',
+        html: '<div style="font-size:26px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))">🏥</div>',
         iconSize: [28, 28],
         iconAnchor: [14, 14],
       });
@@ -357,6 +503,21 @@
           patientMarker.getLatLng(),
         ], { padding: [40, 40] });
       }
+    }
+
+    function placeHospitalMarker(lat, lng, name) {
+      if (!liveMap || !lat || !lng) return;
+      if (hospitalMarker) liveMap.removeLayer(hospitalMarker);
+      hospitalMarker = L.marker([lat, lng], { icon: getHospitalIcon() })
+        .addTo(liveMap)
+        .bindPopup(`🏥 ${name || 'Receiving Hospital'}`);
+      // Fit all three markers in view
+      const points = [
+        ...(driverMarker  ? [driverMarker.getLatLng()]  : []),
+        ...(patientMarker ? [patientMarker.getLatLng()] : []),
+        [lat, lng],
+      ];
+      if (points.length > 1) liveMap.fitBounds(points, { padding: [40, 40] });
     }
 
     function startLocationTracking() {
