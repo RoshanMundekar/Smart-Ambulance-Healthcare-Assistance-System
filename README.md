@@ -311,3 +311,29 @@ MIT License — Free to use, modify, and distribute.
 > 🆘 **National Emergency: 112**
 > 🚑 **Ambulance: 108**
 > 🏥 **Medical Helpline: 104**
+## 📱 How to Build the Android App (APK)
+
+The project includes an automated script to package the web application into a native Android APK using Google Bubblewrap and Cloudflare Tunnels.
+
+### Step 1: Start the Server and Tunnel
+Run the following batch script to start your FastAPI server and a Cloudflare Tunnel:
+```cmd
+start_tunnel.bat
+```
+Watch the terminal output. Cloudflare will generate a secure, temporary URL for your local server.
+**Copy the URL** that looks like this:
+`https://solid-according-trust-draft.trycloudflare.com`
+
+### Step 2: Compile the APK
+Open a **new** PowerShell terminal and run the build script, passing in the tunnel URL you copied:
+```powershell
+powershell -ExecutionPolicy Bypass -File build_apk.ps1 -TunnelUrl https://your-generated-url.trycloudflare.com
+```
+
+### Optional: Using a Permanent URL
+If you have a permanent Cloudflare Named Tunnel (e.g., `https://ambulance.yourdomain.com`), you can skip the temporary tunnel and build the APK directly:
+```powershell
+powershell -ExecutionPolicy Bypass -File build_apk.ps1 -TunnelUrl https://ambulance.yourdomain.com
+```
+
+> **Note:** Do not close the `start_tunnel.bat` window while using the app on your phone, or the app will lose connection to your local server!

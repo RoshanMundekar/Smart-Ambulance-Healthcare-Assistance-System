@@ -1,6 +1,6 @@
 {
   "packageId": "com.smartambulance.healthcare",
-  "host": "klein-gratis-mall-amanda.trycloudflare.com",
+  "host": "solid-according-trust-draft.trycloudflare.com",
   "name": "Smart Ambulance",
   "launcherName": "SmartAmb",
   "display": "standalone",
@@ -13,19 +13,19 @@
   "backgroundColor": "#0F172A",
   "enableNotifications": false,
   "startUrl": "/",
-  "iconUrl": "https://klein-gratis-mall-amanda.trycloudflare.com/static/icon.png",
-  "maskableIconUrl": "https://klein-gratis-mall-amanda.trycloudflare.com/static/icon.png",
-  "monochromeIconUrl": "https://klein-gratis-mall-amanda.trycloudflare.com/static/icon_192.png",
+  "iconUrl": "https://solid-according-trust-draft.trycloudflare.com/static/icon.png",
+  "maskableIconUrl": "https://solid-according-trust-draft.trycloudflare.com/static/icon.png",
+  "monochromeIconUrl": "https://solid-according-trust-draft.trycloudflare.com/static/icon_192.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "D:\\jack_sparrow\\SMART_AMBULANCE_HEALTHCARE_ASSISTANCE_SYSTEM\\SmartAmbulance\\android.keystore",
     "alias": "android"
   },
   "appVersionName": "y",
-  "appVersionCode": 12,
+  "appVersionCode": 16,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
-  "webManifestUrl": "https://klein-gratis-mall-amanda.trycloudflare.com/static/manifest.json",
+  "webManifestUrl": "https://solid-according-trust-draft.trycloudflare.com/static/manifest.json",
   "fallbackType": "customtabs",
   "features": {
     "locationDelegation": {
@@ -41,7 +41,7 @@
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
   "isMetaQuest": false,
-  "fullScopeUrl": "https://klein-gratis-mall-amanda.trycloudflare.com/",
+  "fullScopeUrl": "https://solid-according-trust-draft.trycloudflare.com/",
   "minSdkVersion": 21,
   "orientation": "portrait",
   "fingerprints": [],
